@@ -28,7 +28,7 @@ from __future__ import annotations
 import sys
 import re
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
 import argparse
 
 import yaml
@@ -59,6 +59,9 @@ DEFAULT_NAMESPACE_FMT = "{team}-{env}-1"
 
 # filename pattern: <team>-<env>-quotas.yml
 QUOTA_RE = re.compile(r"^(?P<team>.+)-(?P<env>[^-]+)-quotas\.ya?ml$")
+
+# Kubernetes namespace validation regex (RFC 1123 label)
+NAMESPACE_RE = re.compile(r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')
 
 
 # ----------------------------
@@ -143,38 +146,93 @@ def extract_resource_quota(quota_doc: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def validate_namespace(namespace: str) -> Tuple[bool, str]:
+    """
+    Validate namespace against Kubernetes naming rules (RFC 1123 label).
+    Returns (is_valid, error_message).
+    """
+    if not namespace:
+        return False, "namespace is empty"
+    if len(namespace) > 63:
+        return False, f"namespace too long ({len(namespace)} chars, max 63)"
+    if not NAMESPACE_RE.match(namespace):
+        return False, "invalid characters (must be lowercase alphanumeric or '-', start/end with alphanumeric)"
+    return True, ""
+
+
 def convert_team(
     team_dir: Path,
     output_root: Path,
     namespace_fmt: str,
-) -> None:
+    errors: List[Tuple[str, str, str]],
+) -> int:
+    """
+    Convert a team's config files to Helm values.
+    Returns count of successfully converted namespaces.
+    Appends errors to the errors list instead of stopping.
+    Each error is (namespace_id, file_path, error_message).
+    """
     team = team_dir.name
+    success_count = 0
+
     props_path = team_dir / "project.properties"
     if not props_path.exists():
+        errors.append((f"{team}", str(props_path), "file not found"))
         print(f"SKIP {team}: missing project.properties")
-        return
+        return 0
 
-    team_props = parse_properties(props_path)
+    try:
+        team_props = parse_properties(props_path)
+    except Exception as e:
+        errors.append((f"{team}", str(props_path), f"failed to parse: {e}"))
+        print(f"SKIP {team}: failed to parse project.properties: {e}")
+        return 0
 
     out_dir = output_root / team
     out_dir.mkdir(parents=True, exist_ok=True)
 
     quota_files = sorted(team_dir.glob("*-quotas.y*ml"))
     if not quota_files:
+        errors.append((f"{team}", str(team_dir), "no quota files found in directory"))
         print(f"SKIP {team}: no quota files found")
-        return
+        return 0
 
     for qf in quota_files:
         m = QUOTA_RE.match(qf.name)
         if not m:
+            errors.append((f"{team}/{qf.name}", str(qf), "quota filename not recognized"))
             print(f"WARN {team}: quota filename not recognized: {qf.name}")
             continue
         env = m.group("env")
+        ns_id = f"{team}/{env}"
 
-        namespace = namespace_fmt.format(team=team, env=env)
+        try:
+            namespace = namespace_fmt.format(team=team, env=env)
+        except Exception as e:
+            errors.append((ns_id, str(qf), f"failed to format namespace: {e}"))
+            print(f"FAIL {ns_id}: failed to format namespace: {e}")
+            continue
 
-        doc = yaml.safe_load(qf.read_text())
-        resource_quota = extract_resource_quota(doc)
+        # Validate namespace name
+        is_valid, validation_error = validate_namespace(namespace)
+        if not is_valid:
+            errors.append((ns_id, str(qf), f"invalid namespace '{namespace}': {validation_error}"))
+            print(f"FAIL {ns_id}: invalid namespace '{namespace}': {validation_error}")
+            continue
+
+        try:
+            doc = yaml.safe_load(qf.read_text())
+        except Exception as e:
+            errors.append((ns_id, str(qf), f"failed to parse YAML: {e}"))
+            print(f"FAIL {ns_id}: failed to parse quota YAML: {e}")
+            continue
+
+        try:
+            resource_quota = extract_resource_quota(doc)
+        except Exception as e:
+            errors.append((ns_id, str(qf), f"failed to extract ResourceQuota: {e}"))
+            print(f"FAIL {ns_id}: failed to extract ResourceQuota: {e}")
+            continue
 
         values = {
             "team": team,
@@ -215,9 +273,17 @@ def convert_team(
         # set extracted quota
         values["resourceQuota"] = resource_quota
 
-        out_file = out_dir / f"{env}.yaml"
-        out_file.write_text(yaml.safe_dump(values, sort_keys=False))
-        print(f"OK  {team}/{env} -> {out_file}")
+        try:
+            out_file = out_dir / f"{env}.yaml"
+            out_file.write_text(yaml.safe_dump(values, sort_keys=False))
+            print(f"OK   {ns_id} -> {out_file}")
+            success_count += 1
+        except Exception as e:
+            errors.append((ns_id, str(qf), f"failed to write output file: {e}"))
+            print(f"FAIL {ns_id}: failed to write output file: {e}")
+            continue
+
+    return success_count
 
 
 def parse_args() -> argparse.Namespace:
@@ -261,8 +327,35 @@ def main() -> int:
         print(f"ERROR: no team directories under {input_root}")
         return 2
 
+    # Track errors and success counts
+    # Each error is (namespace_id, file_path, error_message)
+    errors: List[Tuple[str, str, str]] = []
+    total_success = 0
+
     for td in sorted(team_dirs):
-        convert_team(td, output_root, namespace_fmt)
+        total_success += convert_team(td, output_root, namespace_fmt, errors)
+
+    # Print summary
+    print("")
+    print("=" * 60)
+    print(f"SUMMARY: {total_success} namespace(s) converted successfully")
+    print(f"         {len(errors)} error(s) encountered")
+    print("=" * 60)
+
+    if errors:
+        print("")
+        print("PROBLEMATIC NAMESPACES:")
+        print("-" * 60)
+        for ns_id, file_path, error_msg in errors:
+            print(f"  {ns_id}")
+            print(f"    File: {file_path}")
+            print(f"    Error: {error_msg}")
+            print("")
+        print("-" * 60)
+        print(f"Total: {len(errors)} issue(s) to fix")
+        print("")
+        # Return 1 if there were errors but some succeeded, 2 if all failed
+        return 1 if total_success > 0 else 2
 
     return 0
 
@@ -275,8 +368,10 @@ ENDFILE
 cat > charts/namespace-onboarding/Chart.yaml << 'ENDFILE'
 apiVersion: v2
 name: namespace-onboarding
-description: Provisions a Kubernetes namespace with quotas, RBAC and optional Argo resources
+description: Creates namespace, quota, RBAC, and Argo objects using values per namespace
+type: application
 version: 0.1.0
+appVersion: "1.0"
 ENDFILE
 
 # ============== charts/namespace-onboarding/values.yaml ==============
@@ -307,6 +402,15 @@ request_id: ""
 repositories: []
 
 # Apps to deploy (optional)
+# Each application can have:
+#   - name: Application name (defaults to namespace name)
+#   - repoURL: Git repo or OCI registry URL
+#   - path: Path within repo (for git sources)
+#   - chart: Chart name (for OCI/Helm sources)
+#   - targetRevision: Branch/tag/commit (default: "main")
+#   - sourceType: "helm", "kustomize", or "" for plain manifests
+#   - helm:
+#       valueFiles: [list of values files]
 applications: []
 
 # Resource quota limits for the namespace
@@ -337,7 +441,7 @@ ENDFILE
 
 # ============== charts/namespace-onboarding/templates/resourcequota.yaml ==============
 cat > charts/namespace-onboarding/templates/resourcequota.yaml << 'ENDFILE'
-{{- if .Values.resourceQuota.enabled }}
+{{- if and .Values.resourceQuota .Values.resourceQuota.enabled }}
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -347,11 +451,17 @@ metadata:
     team: {{ .Values.team | quote }}
 spec:
   hard:
-    requests.cpu: {{ .Values.resourceQuota.cpu.requests | quote }}
-    limits.cpu: {{ .Values.resourceQuota.cpu.limits | quote }}
-    requests.memory: {{ .Values.resourceQuota.memory.requests | quote }}
-    limits.memory: {{ .Values.resourceQuota.memory.limits | quote }}
+    {{- if .Values.resourceQuota.cpu }}
+    requests.cpu: {{ .Values.resourceQuota.cpu.requests | default "0" | quote }}
+    limits.cpu: {{ .Values.resourceQuota.cpu.limits | default "0" | quote }}
+    {{- end }}
+    {{- if .Values.resourceQuota.memory }}
+    requests.memory: {{ .Values.resourceQuota.memory.requests | default "0" | quote }}
+    limits.memory: {{ .Values.resourceQuota.memory.limits | default "0" | quote }}
+    {{- end }}
+    {{- if .Values.resourceQuota.storage }}
     requests.storage: {{ .Values.resourceQuota.storage | quote }}
+    {{- end }}
     {{- if .Values.resourceQuota.pods }}
     pods: {{ .Values.resourceQuota.pods | quote }}
     {{- end }}
@@ -381,24 +491,27 @@ ENDFILE
 
 # ============== charts/namespace-onboarding/templates/appproject.yaml ==============
 cat > charts/namespace-onboarding/templates/appproject.yaml << 'ENDFILE'
-{{- if .Values.repositories }}
+{{- if .Values.adgroup }}
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: {{ .Values.namespace | quote }}
-  namespace: argocd
+  namespace: "argocd"
+  labels:
+    team: {{ .Values.team | quote }}
 spec:
-  description: "Project for {{ .Values.team }}"
-  sourceRepos:
-    {{- range .Values.repositories }}
-    - {{ . | quote }}
-    {{- end }}
+  description: {{ printf "Project for %s - %s" .Values.team .Values.namespace | quote }}
   destinations:
     - namespace: {{ .Values.namespace | quote }}
       server: https://kubernetes.default.svc
-  clusterResourceWhitelist:
-    - group: ""
-      kind: Namespace
+  sourceRepos:
+    {{- if .Values.repositories }}
+    {{- range .Values.repositories }}
+    - {{ .url | quote }}
+    {{- end }}
+    {{- else }}
+    - "*"
+    {{- end }}
 {{- end }}
 ENDFILE
 
@@ -409,14 +522,43 @@ cat > charts/namespace-onboarding/templates/application.yaml << 'ENDFILE'
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ .name | quote }}
-  namespace: argocd
+  name: {{ .name | default $.Values.namespace | quote }}
+  namespace: applications-gitops
+  labels:
+    team: {{ $.Values.team | quote }}
+    argocd.argoproj.io/managed-by: applications-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
+  # Use the project with the same name as the namespace
   project: {{ $.Values.namespace | quote }}
   source:
     repoURL: {{ .repoURL | quote }}
+    targetRevision: {{ .targetRevision | default "main" | quote }}
+    {{- if .chart }}
+    # OCI chart reference
+    chart: {{ .chart | quote }}
+    {{- else }}
+    # Git path reference
     path: {{ .path | quote }}
-    targetRevision: {{ .targetRevision | default "HEAD" | quote }}
+    {{- end }}
+    {{- if eq .sourceType "helm" }}
+    {{- if and .helm .helm.valueFiles }}
+    helm:
+      valueFiles:
+        {{- range .helm.valueFiles }}
+        - {{ . | quote }}
+        {{- end }}
+    {{- else }}
+    helm: {}
+    {{- end }}
+    {{- else if eq .sourceType "kustomize" }}
+    kustomize: {}
+    {{- else }}
+    # Plain directory (vanilla K8s manifests) - no special config needed
+    directory:
+      recurse: true
+    {{- end }}
   destination:
     server: https://kubernetes.default.svc
     namespace: {{ $.Values.namespace | quote }}
