@@ -151,26 +151,27 @@ def convert_team(
     team_dir: Path,
     output_root: Path,
     namespace_fmt: str,
-    errors: List[Tuple[str, str]],
+    errors: List[Tuple[str, str, str]],
 ) -> int:
     """
     Convert a team's config files to Helm values.
     Returns count of successfully converted namespaces.
     Appends errors to the errors list instead of stopping.
+    Each error is (namespace_id, file_path, error_message).
     """
     team = team_dir.name
     success_count = 0
 
     props_path = team_dir / "project.properties"
     if not props_path.exists():
-        errors.append((f"{team}", "missing project.properties"))
+        errors.append((f"{team}", str(props_path), "file not found"))
         print(f"SKIP {team}: missing project.properties")
         return 0
 
     try:
         team_props = parse_properties(props_path)
     except Exception as e:
-        errors.append((f"{team}", f"failed to parse project.properties: {e}"))
+        errors.append((f"{team}", str(props_path), f"failed to parse: {e}"))
         print(f"SKIP {team}: failed to parse project.properties: {e}")
         return 0
 
@@ -179,14 +180,14 @@ def convert_team(
 
     quota_files = sorted(team_dir.glob("*-quotas.y*ml"))
     if not quota_files:
-        errors.append((f"{team}", "no quota files found"))
+        errors.append((f"{team}", str(team_dir), "no quota files found in directory"))
         print(f"SKIP {team}: no quota files found")
         return 0
 
     for qf in quota_files:
         m = QUOTA_RE.match(qf.name)
         if not m:
-            errors.append((f"{team}/{qf.name}", "quota filename not recognized"))
+            errors.append((f"{team}/{qf.name}", str(qf), "quota filename not recognized"))
             print(f"WARN {team}: quota filename not recognized: {qf.name}")
             continue
         env = m.group("env")
@@ -195,28 +196,28 @@ def convert_team(
         try:
             namespace = namespace_fmt.format(team=team, env=env)
         except Exception as e:
-            errors.append((ns_id, f"failed to format namespace: {e}"))
+            errors.append((ns_id, str(qf), f"failed to format namespace: {e}"))
             print(f"FAIL {ns_id}: failed to format namespace: {e}")
             continue
 
         # Validate namespace name
         is_valid, validation_error = validate_namespace(namespace)
         if not is_valid:
-            errors.append((ns_id, f"invalid namespace '{namespace}': {validation_error}"))
+            errors.append((ns_id, str(qf), f"invalid namespace '{namespace}': {validation_error}"))
             print(f"FAIL {ns_id}: invalid namespace '{namespace}': {validation_error}")
             continue
 
         try:
             doc = yaml.safe_load(qf.read_text())
         except Exception as e:
-            errors.append((ns_id, f"failed to parse quota YAML: {e}"))
+            errors.append((ns_id, str(qf), f"failed to parse YAML: {e}"))
             print(f"FAIL {ns_id}: failed to parse quota YAML: {e}")
             continue
 
         try:
             resource_quota = extract_resource_quota(doc)
         except Exception as e:
-            errors.append((ns_id, f"failed to extract ResourceQuota: {e}"))
+            errors.append((ns_id, str(qf), f"failed to extract ResourceQuota: {e}"))
             print(f"FAIL {ns_id}: failed to extract ResourceQuota: {e}")
             continue
 
@@ -265,7 +266,7 @@ def convert_team(
             print(f"OK   {ns_id} -> {out_file}")
             success_count += 1
         except Exception as e:
-            errors.append((ns_id, f"failed to write output file: {e}"))
+            errors.append((ns_id, str(qf), f"failed to write output file: {e}"))
             print(f"FAIL {ns_id}: failed to write output file: {e}")
             continue
 
@@ -314,7 +315,8 @@ def main() -> int:
         return 2
 
     # Track errors and success counts
-    errors: List[Tuple[str, str]] = []
+    # Each error is (namespace_id, file_path, error_message)
+    errors: List[Tuple[str, str, str]] = []
     total_success = 0
 
     for td in sorted(team_dirs):
@@ -331,9 +333,11 @@ def main() -> int:
         print("")
         print("PROBLEMATIC NAMESPACES:")
         print("-" * 60)
-        for ns_id, error_msg in errors:
+        for ns_id, file_path, error_msg in errors:
             print(f"  {ns_id}")
-            print(f"    -> {error_msg}")
+            print(f"    File: {file_path}")
+            print(f"    Error: {error_msg}")
+            print("")
         print("-" * 60)
         print(f"Total: {len(errors)} issue(s) to fix")
         print("")
