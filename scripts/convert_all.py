@@ -16,6 +16,7 @@ import sys
 import re
 from pathlib import Path
 from typing import Dict, Any
+import argparse
 
 import yaml
 
@@ -23,8 +24,8 @@ import yaml
 # ----------------------------
 # CONFIG (edit as needed)
 # ----------------------------
-INPUT_ROOT = Path("input")
-OUTPUT_ROOT = Path("output")
+DEFAULT_INPUT_ROOT = Path("input")
+DEFAULT_OUTPUT_ROOT = Path("output")
 
 # explicit 1:1 mapping from properties keys to Helm values keys
 # Output keys support dot-notation for nesting.
@@ -41,7 +42,7 @@ KEY_MAP = {
 }
 
 # namespace format (make configurable if needed)
-NAMESPACE_FMT = "{team}-{env}-1"
+DEFAULT_NAMESPACE_FMT = "{team}-{env}-1"
 
 # filename pattern: <team>-<env>-quotas.yml
 QUOTA_RE = re.compile(r"^(?P<team>.+)-(?P<env>[^-]+)-quotas\.ya?ml$")
@@ -129,7 +130,11 @@ def extract_resource_quota(quota_doc: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-def convert_team(team_dir: Path) -> None:
+def convert_team(
+    team_dir: Path,
+    output_root: Path,
+    namespace_fmt: str,
+) -> None:
     team = team_dir.name
     props_path = team_dir / "project.properties"
     if not props_path.exists():
@@ -138,7 +143,7 @@ def convert_team(team_dir: Path) -> None:
 
     team_props = parse_properties(props_path)
 
-    out_dir = OUTPUT_ROOT / team
+    out_dir = output_root / team
     out_dir.mkdir(parents=True, exist_ok=True)
 
     quota_files = sorted(team_dir.glob("*-quotas.y*ml"))
@@ -153,7 +158,7 @@ def convert_team(team_dir: Path) -> None:
             continue
         env = m.group("env")
 
-        namespace = NAMESPACE_FMT.format(team=team, env=env)
+        namespace = namespace_fmt.format(team=team, env=env)
 
         doc = yaml.safe_load(qf.read_text())
         resource_quota = extract_resource_quota(doc)
@@ -202,20 +207,49 @@ def convert_team(team_dir: Path) -> None:
         print(f"OK  {team}/{env} -> {out_file}")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Convert legacy team configs to Helm values files.",
+    )
+    parser.add_argument(
+        "--input-root",
+        type=Path,
+        default=DEFAULT_INPUT_ROOT,
+        help="Root directory containing team folders (default: input).",
+    )
+    parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=DEFAULT_OUTPUT_ROOT,
+        help="Root directory to write converted values (default: output).",
+    )
+    parser.add_argument(
+        "--namespace-format",
+        default=DEFAULT_NAMESPACE_FMT,
+        help="Namespace format string (default: '{team}-{env}-1').",
+    )
+    return parser.parse_args()
+
+
 def main() -> int:
-    if not INPUT_ROOT.exists():
-        print(f"ERROR: input root not found: {INPUT_ROOT}")
+    args = parse_args()
+    input_root = args.input_root
+    output_root = args.output_root
+    namespace_fmt = args.namespace_format
+
+    if not input_root.exists():
+        print(f"ERROR: input root not found: {input_root}")
         return 2
 
-    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    output_root.mkdir(parents=True, exist_ok=True)
 
-    team_dirs = [p for p in INPUT_ROOT.iterdir() if p.is_dir()]
+    team_dirs = [p for p in input_root.iterdir() if p.is_dir()]
     if not team_dirs:
-        print(f"ERROR: no team directories under {INPUT_ROOT}")
+        print(f"ERROR: no team directories under {input_root}")
         return 2
 
     for td in sorted(team_dirs):
-        convert_team(td)
+        convert_team(td, output_root, namespace_fmt)
 
     return 0
 

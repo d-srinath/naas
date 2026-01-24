@@ -13,3 +13,6 @@ into Helm values files per team/env under `output/`.
 ```bash
 python3 -m pip install pyyaml
 python3 scripts/convert_all.py
+
+# Optional overrides
+# python3 scripts/convert_all.py --input-root input --output-root output --namespace-format "{team}-{env}-1"
