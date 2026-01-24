@@ -15,7 +15,7 @@ from __future__ import annotations
 import sys
 import re
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
 import argparse
 
 import yaml
@@ -46,6 +46,9 @@ DEFAULT_NAMESPACE_FMT = "{team}-{env}-1"
 
 # filename pattern: <team>-<env>-quotas.yml
 QUOTA_RE = re.compile(r"^(?P<team>.+)-(?P<env>[^-]+)-quotas\.ya?ml$")
+
+# Kubernetes namespace validation regex (RFC 1123 label)
+NAMESPACE_RE = re.compile(r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')
 
 
 # ----------------------------
@@ -130,38 +133,92 @@ def extract_resource_quota(quota_doc: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def validate_namespace(namespace: str) -> Tuple[bool, str]:
+    """
+    Validate namespace against Kubernetes naming rules (RFC 1123 label).
+    Returns (is_valid, error_message).
+    """
+    if not namespace:
+        return False, "namespace is empty"
+    if len(namespace) > 63:
+        return False, f"namespace too long ({len(namespace)} chars, max 63)"
+    if not NAMESPACE_RE.match(namespace):
+        return False, "invalid characters (must be lowercase alphanumeric or '-', start/end with alphanumeric)"
+    return True, ""
+
+
 def convert_team(
     team_dir: Path,
     output_root: Path,
     namespace_fmt: str,
-) -> None:
+    errors: List[Tuple[str, str]],
+) -> int:
+    """
+    Convert a team's config files to Helm values.
+    Returns count of successfully converted namespaces.
+    Appends errors to the errors list instead of stopping.
+    """
     team = team_dir.name
+    success_count = 0
+
     props_path = team_dir / "project.properties"
     if not props_path.exists():
+        errors.append((f"{team}", "missing project.properties"))
         print(f"SKIP {team}: missing project.properties")
-        return
+        return 0
 
-    team_props = parse_properties(props_path)
+    try:
+        team_props = parse_properties(props_path)
+    except Exception as e:
+        errors.append((f"{team}", f"failed to parse project.properties: {e}"))
+        print(f"SKIP {team}: failed to parse project.properties: {e}")
+        return 0
 
     out_dir = output_root / team
     out_dir.mkdir(parents=True, exist_ok=True)
 
     quota_files = sorted(team_dir.glob("*-quotas.y*ml"))
     if not quota_files:
+        errors.append((f"{team}", "no quota files found"))
         print(f"SKIP {team}: no quota files found")
-        return
+        return 0
 
     for qf in quota_files:
         m = QUOTA_RE.match(qf.name)
         if not m:
+            errors.append((f"{team}/{qf.name}", "quota filename not recognized"))
             print(f"WARN {team}: quota filename not recognized: {qf.name}")
             continue
         env = m.group("env")
+        ns_id = f"{team}/{env}"
 
-        namespace = namespace_fmt.format(team=team, env=env)
+        try:
+            namespace = namespace_fmt.format(team=team, env=env)
+        except Exception as e:
+            errors.append((ns_id, f"failed to format namespace: {e}"))
+            print(f"FAIL {ns_id}: failed to format namespace: {e}")
+            continue
 
-        doc = yaml.safe_load(qf.read_text())
-        resource_quota = extract_resource_quota(doc)
+        # Validate namespace name
+        is_valid, validation_error = validate_namespace(namespace)
+        if not is_valid:
+            errors.append((ns_id, f"invalid namespace '{namespace}': {validation_error}"))
+            print(f"FAIL {ns_id}: invalid namespace '{namespace}': {validation_error}")
+            continue
+
+        try:
+            doc = yaml.safe_load(qf.read_text())
+        except Exception as e:
+            errors.append((ns_id, f"failed to parse quota YAML: {e}"))
+            print(f"FAIL {ns_id}: failed to parse quota YAML: {e}")
+            continue
+
+        try:
+            resource_quota = extract_resource_quota(doc)
+        except Exception as e:
+            errors.append((ns_id, f"failed to extract ResourceQuota: {e}"))
+            print(f"FAIL {ns_id}: failed to extract ResourceQuota: {e}")
+            continue
 
         values = {
             "team": team,
@@ -202,9 +259,17 @@ def convert_team(
         # set extracted quota
         values["resourceQuota"] = resource_quota
 
-        out_file = out_dir / f"{env}.yaml"
-        out_file.write_text(yaml.safe_dump(values, sort_keys=False))
-        print(f"OK  {team}/{env} -> {out_file}")
+        try:
+            out_file = out_dir / f"{env}.yaml"
+            out_file.write_text(yaml.safe_dump(values, sort_keys=False))
+            print(f"OK   {ns_id} -> {out_file}")
+            success_count += 1
+        except Exception as e:
+            errors.append((ns_id, f"failed to write output file: {e}"))
+            print(f"FAIL {ns_id}: failed to write output file: {e}")
+            continue
+
+    return success_count
 
 
 def parse_args() -> argparse.Namespace:
@@ -248,8 +313,32 @@ def main() -> int:
         print(f"ERROR: no team directories under {input_root}")
         return 2
 
+    # Track errors and success counts
+    errors: List[Tuple[str, str]] = []
+    total_success = 0
+
     for td in sorted(team_dirs):
-        convert_team(td, output_root, namespace_fmt)
+        total_success += convert_team(td, output_root, namespace_fmt, errors)
+
+    # Print summary
+    print("")
+    print("=" * 60)
+    print(f"SUMMARY: {total_success} namespace(s) converted successfully")
+    print(f"         {len(errors)} error(s) encountered")
+    print("=" * 60)
+
+    if errors:
+        print("")
+        print("PROBLEMATIC NAMESPACES:")
+        print("-" * 60)
+        for ns_id, error_msg in errors:
+            print(f"  {ns_id}")
+            print(f"    -> {error_msg}")
+        print("-" * 60)
+        print(f"Total: {len(errors)} issue(s) to fix")
+        print("")
+        # Return 1 if there were errors but some succeeded, 2 if all failed
+        return 1 if total_success > 0 else 2
 
     return 0
 
