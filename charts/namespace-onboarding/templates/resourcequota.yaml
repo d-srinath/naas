@@ -1,20 +1,22 @@
-{{- if and .Values.resourceQuota .Values.resourceQuota.enabled }}
+{{- if .Values.resourceQuota }}
+{{- if .Values.resourceQuota.enabled }}
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: {{ printf "%s-quota" .Values.namespace | quote }}
-  namespace: {{ .Values.namespace | quote }}
+  name: {{ .Values.namespace }}-quota
+  namespace: {{ .Values.namespace }}
   labels:
-    team: {{ .Values.team | quote }}
+    team: {{ .Values.team }}
+    argocd.argoproj.io/managed-by: applications-gitops
 spec:
   hard:
     {{- if .Values.resourceQuota.cpu }}
-    requests.cpu: {{ .Values.resourceQuota.cpu.requests | default "0" | quote }}
-    limits.cpu: {{ .Values.resourceQuota.cpu.limits | default "0" | quote }}
+    requests.cpu: {{ .Values.resourceQuota.cpu.requests | quote }}
+    limits.cpu: {{ .Values.resourceQuota.cpu.limits | quote }}
     {{- end }}
     {{- if .Values.resourceQuota.memory }}
-    requests.memory: {{ .Values.resourceQuota.memory.requests | default "0" | quote }}
-    limits.memory: {{ .Values.resourceQuota.memory.limits | default "0" | quote }}
+    requests.memory: {{ .Values.resourceQuota.memory.requests | quote }}
+    limits.memory: {{ .Values.resourceQuota.memory.limits | quote }}
     {{- end }}
     {{- if .Values.resourceQuota.storage }}
     requests.storage: {{ .Values.resourceQuota.storage | quote }}
@@ -22,4 +24,5 @@ spec:
     {{- if .Values.resourceQuota.pods }}
     pods: {{ .Values.resourceQuota.pods | quote }}
     {{- end }}
+{{- end }}
 {{- end }}
