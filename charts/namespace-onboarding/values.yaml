@@ -24,6 +24,15 @@ request_id: ""
 repositories: []
 
 # Apps to deploy (optional)
+# Each application can have:
+#   - name: Application name (defaults to namespace name)
+#   - repoURL: Git repo or OCI registry URL
+#   - path: Path within repo (for git sources)
+#   - chart: Chart name (for OCI/Helm sources)
+#   - targetRevision: Branch/tag/commit (default: "main")
+#   - sourceType: "helm", "kustomize", or "" for plain manifests
+#   - helm:
+#       valueFiles: [list of values files]
 applications: []
 
 # Resource quota limits for the namespace

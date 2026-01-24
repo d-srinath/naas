@@ -1,18 +1,44 @@
 {{- range .Values.applications }}
+---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: {{ .name | default $.Values.namespace | quote }}
-  namespace: "argocd"
+  namespace: applications-gitops
+  labels:
+    team: {{ $.Values.team | quote }}
+    argocd.argoproj.io/managed-by: applications-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
+  # Use the project with the same name as the namespace
   project: {{ $.Values.namespace | quote }}
   source:
-    repoURL: {{ .repoUrl | quote }}
+    repoURL: {{ .repoURL | quote }}
     targetRevision: {{ .targetRevision | default "main" | quote }}
     {{- if .chart }}
+    # OCI chart reference
     chart: {{ .chart | quote }}
     {{- else }}
+    # Git path reference
     path: {{ .path | quote }}
+    {{- end }}
+    {{- if eq .sourceType "helm" }}
+    {{- if and .helm .helm.valueFiles }}
+    helm:
+      valueFiles:
+        {{- range .helm.valueFiles }}
+        - {{ . | quote }}
+        {{- end }}
+    {{- else }}
+    helm: {}
+    {{- end }}
+    {{- else if eq .sourceType "kustomize" }}
+    kustomize: {}
+    {{- else }}
+    # Plain directory (vanilla K8s manifests) - no special config needed
+    directory:
+      recurse: true
     {{- end }}
   destination:
     server: https://kubernetes.default.svc
@@ -21,5 +47,4 @@ spec:
     automated:
       prune: true
       selfHeal: true
----
 {{- end }}
