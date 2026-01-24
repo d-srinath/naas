@@ -10,13 +10,16 @@ Namespace-as-a-Service (NaaS) automation that converts legacy team configuration
 
 ```bash
 # Install dependencies
-python3 -m pip install pyyaml
+python3 -m pip install pyyaml pytest
 
 # Run the conversion script (uses defaults: input/ -> output/)
 python3 scripts/convert_all.py
 
 # Run with custom paths and namespace format
 python3 scripts/convert_all.py --input-root /path/to/input --output-root /path/to/output --namespace-format "{team}-{env}-ns"
+
+# Run tests
+python3 -m pytest scripts/test_convert_all.py -v
 
 # Validate Helm chart
 helm lint charts/namespace-onboarding
@@ -28,6 +31,7 @@ helm template ns charts/namespace-onboarding -f output/<team>/<env>.yaml
 ## Project Structure
 
 - `scripts/convert_all.py` - Main conversion script (Python 3)
+- `scripts/test_convert_all.py` - Pytest test suite
 - `charts/namespace-onboarding/` - Helm chart for namespace provisioning
 - `input/<team>/` - Legacy config files per team
 - `output/<team>/` - Generated Helm values files
@@ -63,5 +67,17 @@ Key values in `charts/namespace-onboarding/values.yaml`:
 - `team`, `namespace` - Identifiers
 - `project.*` - Metadata (domain, manager, code, cost_center)
 - `adgroup` - LDAP/AD group for admin access
-- `resourceQuota.*` - CPU, memory, storage limits
-- `repositories`, `applications` - ArgoCD configuration
+- `resourceQuota.*` - CPU, memory, storage limits (enabled by default)
+- `limitRange.*` - Pod/Container min/max/default limits (enabled by default)
+- `application.*` - ArgoCD Application config (requires repoURL)
+- `repositories` - Allowed source repos for ArgoCD project
+
+## Testing
+
+Tests cover:
+- Property file parsing (`TestParseProperties`)
+- ResourceQuota extraction (`TestExtractResourceQuota`)
+- LimitRange extraction and merging (`TestExtractLimitRange`)
+- Namespace validation (`TestValidateNamespace`)
+- Full team conversion (`TestConvertTeam`)
+- Golden file tests using actual input files (`TestGoldenFiles`)
