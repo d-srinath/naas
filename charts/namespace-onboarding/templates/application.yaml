@@ -1,50 +1,41 @@
-{{- range .Values.applications }}
----
+{{- if .Values.application }}
+{{- if .Values.application.enabled }}
+{{- if .Values.application.repoURL }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ .name | default $.Values.namespace | quote }}
+  name: {{ .Values.application.name | default .Values.namespace }}
   namespace: applications-gitops
   labels:
-    team: {{ $.Values.team | quote }}
+    team: {{ .Values.team }}
     argocd.argoproj.io/managed-by: applications-gitops
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  # Use the project with the same name as the namespace
-  project: {{ $.Values.namespace | quote }}
+  project: {{ .Values.namespace }}
   source:
-    repoURL: {{ .repoURL | quote }}
-    targetRevision: {{ .targetRevision | default "main" | quote }}
-    {{- if .chart }}
-    # OCI chart reference
-    chart: {{ .chart | quote }}
+    repoURL: {{ .Values.application.repoURL }}
+    targetRevision: {{ .Values.application.targetRevision | default "main" }}
+    {{- if .Values.application.chart }}
+    chart: {{ .Values.application.chart }}
     {{- else }}
-    # Git path reference
-    path: {{ .path | quote }}
+    path: {{ .Values.application.path | default "." }}
     {{- end }}
-    {{- if eq .sourceType "helm" }}
-    {{- if and .helm .helm.valueFiles }}
-    helm:
-      valueFiles:
-        {{- range .helm.valueFiles }}
-        - {{ . | quote }}
-        {{- end }}
-    {{- else }}
+    {{- if eq .Values.application.sourceType "helm" }}
     helm: {}
-    {{- end }}
-    {{- else if eq .sourceType "kustomize" }}
+    {{- else if eq .Values.application.sourceType "kustomize" }}
     kustomize: {}
     {{- else }}
-    # Plain directory (vanilla K8s manifests) - no special config needed
     directory:
       recurse: true
     {{- end }}
   destination:
     server: https://kubernetes.default.svc
-    namespace: {{ $.Values.namespace | quote }}
+    namespace: {{ .Values.namespace }}
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+{{- end }}
+{{- end }}
 {{- end }}

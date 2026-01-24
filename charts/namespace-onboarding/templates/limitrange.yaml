@@ -1,0 +1,74 @@
+{{- if .Values.limitRange }}
+{{- if .Values.limitRange.enabled }}
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: {{ .Values.namespace }}-limits
+  namespace: {{ .Values.namespace }}
+  labels:
+    team: {{ .Values.team }}
+    argocd.argoproj.io/managed-by: applications-gitops
+spec:
+  limits:
+    {{- if .Values.limitRange.pod }}
+    - type: Pod
+      {{- if or .Values.limitRange.pod.maxCpu .Values.limitRange.pod.maxMemory }}
+      max:
+        {{- if .Values.limitRange.pod.maxCpu }}
+        cpu: {{ .Values.limitRange.pod.maxCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.pod.maxMemory }}
+        memory: {{ .Values.limitRange.pod.maxMemory | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.limitRange.pod.minCpu .Values.limitRange.pod.minMemory }}
+      min:
+        {{- if .Values.limitRange.pod.minCpu }}
+        cpu: {{ .Values.limitRange.pod.minCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.pod.minMemory }}
+        memory: {{ .Values.limitRange.pod.minMemory | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.limitRange.container }}
+    - type: Container
+      {{- if or .Values.limitRange.container.maxCpu .Values.limitRange.container.maxMemory }}
+      max:
+        {{- if .Values.limitRange.container.maxCpu }}
+        cpu: {{ .Values.limitRange.container.maxCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.container.maxMemory }}
+        memory: {{ .Values.limitRange.container.maxMemory | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.limitRange.container.minCpu .Values.limitRange.container.minMemory }}
+      min:
+        {{- if .Values.limitRange.container.minCpu }}
+        cpu: {{ .Values.limitRange.container.minCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.container.minMemory }}
+        memory: {{ .Values.limitRange.container.minMemory | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.limitRange.container.defaultCpu .Values.limitRange.container.defaultMemory }}
+      default:
+        {{- if .Values.limitRange.container.defaultCpu }}
+        cpu: {{ .Values.limitRange.container.defaultCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.container.defaultMemory }}
+        memory: {{ .Values.limitRange.container.defaultMemory | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.limitRange.container.defaultRequestCpu .Values.limitRange.container.defaultRequestMemory }}
+      defaultRequest:
+        {{- if .Values.limitRange.container.defaultRequestCpu }}
+        cpu: {{ .Values.limitRange.container.defaultRequestCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.container.defaultRequestMemory }}
+        memory: {{ .Values.limitRange.container.defaultRequestMemory | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}

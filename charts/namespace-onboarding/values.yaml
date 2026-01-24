@@ -1,5 +1,6 @@
 # Default values for namespace-onboarding.
 # These values are overridden per namespace by generated values files.
+# All resources are ENABLED by default - set enabled: false to disable.
 
 team: ""
 namespace: ""
@@ -15,7 +16,7 @@ project:
   created_by: ""
   cmdb_application: ""
 
-# LDAP group for admin access
+# LDAP group for admin access (required for RoleBinding and AppProject)
 adgroup: ""
 
 # Request tracking ID
@@ -24,21 +25,21 @@ request_id: ""
 # Allowed source repos for Argo project
 repositories: []
 
-# Apps to deploy (optional)
-# Each application can have:
-#   - name: Application name (defaults to namespace name)
-#   - repoURL: Git repo or OCI registry URL
-#   - path: Path within repo (for git sources)
-#   - chart: Chart name (for OCI/Helm sources)
-#   - targetRevision: Branch/tag/commit (default: "main")
-#   - sourceType: "helm", "kustomize", or "" for plain manifests
-#   - helm:
-#       valueFiles: [list of values files]
-applications: []
+# ArgoCD Application configuration
+# Enabled by default - requires repoURL at minimum
+# If repoURL is not provided, application will not be created
+application:
+  enabled: true
+  name: ""           # defaults to namespace name
+  repoURL: ""        # REQUIRED - Git repo or OCI registry URL
+  path: ""           # defaults to root path
+  targetRevision: "" # defaults to "main"
+  chart: ""          # for OCI/Helm sources (mutually exclusive with path)
+  sourceType: ""     # "helm", "kustomize", or "" for plain manifests
 
-# Resource quota limits for the namespace
+# Resource quota limits for the namespace (enabled by default)
 resourceQuota:
-  enabled: false
+  enabled: true
   cpu:
     requests: ""
     limits: ""
@@ -47,3 +48,24 @@ resourceQuota:
     limits: ""
   storage: ""
   pods: ""
+
+# LimitRange for default/min/max resource constraints (enabled by default)
+# Merged from multiple LimitRange objects in input (e.g., memory-small, cpu-medium)
+limitRange:
+  enabled: true
+  # Pod-level limits
+  pod:
+    maxCpu: ""
+    maxMemory: ""
+    minCpu: ""
+    minMemory: ""
+  # Container-level limits
+  container:
+    maxCpu: ""
+    maxMemory: ""
+    minCpu: ""
+    minMemory: ""
+    defaultCpu: ""
+    defaultMemory: ""
+    defaultRequestCpu: ""
+    defaultRequestMemory: ""
