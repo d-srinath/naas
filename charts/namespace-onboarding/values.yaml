@@ -7,6 +7,7 @@ namespace: ""
 # Project metadata used for labels/annotations and documentation
 project:
   domain: ""
+  email: ""
   manager: ""
   code: ""
   cost_center: ""
