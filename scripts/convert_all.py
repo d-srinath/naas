@@ -133,6 +133,100 @@ def extract_resource_quota(quota_doc: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def extract_limit_range(quota_doc: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract LimitRange objects and merge into a single Helm-compatible structure.
+
+    Input quota_doc is expected to be either:
+      - a Template-like object with `objects: [...]` containing LimitRange(s)
+      - OR a plain LimitRange object
+
+    Merges multiple LimitRanges (e.g., memory-small, cpu-medium) into one structure
+    with separate Pod and Container limits.
+    """
+    limit_ranges: List[Dict[str, Any]] = []
+
+    if isinstance(quota_doc, dict) and quota_doc.get("kind") == "LimitRange":
+        limit_ranges.append(quota_doc)
+    else:
+        for obj in quota_doc.get("objects", []):
+            if isinstance(obj, dict) and obj.get("kind") == "LimitRange":
+                limit_ranges.append(obj)
+
+    if not limit_ranges:
+        # No LimitRange found - return disabled structure
+        return {"enabled": False}
+
+    # Initialize merged structure
+    pod_limits: Dict[str, Any] = {}
+    container_limits: Dict[str, Any] = {}
+
+    def to_str(val: Any) -> str:
+        return "" if val is None else str(val)
+
+    # Process all LimitRange objects and merge their limits
+    for lr in limit_ranges:
+        spec_limits = lr.get("spec", {}).get("limits", []) or []
+        for limit_item in spec_limits:
+            limit_type = limit_item.get("type", "")
+
+            if limit_type == "Pod":
+                # Pod-level limits: min, max
+                if "max" in limit_item:
+                    max_vals = limit_item["max"]
+                    if "cpu" in max_vals:
+                        pod_limits["maxCpu"] = to_str(max_vals["cpu"])
+                    if "memory" in max_vals:
+                        pod_limits["maxMemory"] = to_str(max_vals["memory"])
+                if "min" in limit_item:
+                    min_vals = limit_item["min"]
+                    if "cpu" in min_vals:
+                        pod_limits["minCpu"] = to_str(min_vals["cpu"])
+                    if "memory" in min_vals:
+                        pod_limits["minMemory"] = to_str(min_vals["memory"])
+
+            elif limit_type == "Container":
+                # Container-level limits: min, max, default, defaultRequest
+                if "max" in limit_item:
+                    max_vals = limit_item["max"]
+                    if "cpu" in max_vals:
+                        container_limits["maxCpu"] = to_str(max_vals["cpu"])
+                    if "memory" in max_vals:
+                        container_limits["maxMemory"] = to_str(max_vals["memory"])
+                if "min" in limit_item:
+                    min_vals = limit_item["min"]
+                    if "cpu" in min_vals:
+                        container_limits["minCpu"] = to_str(min_vals["cpu"])
+                    if "memory" in min_vals:
+                        container_limits["minMemory"] = to_str(min_vals["memory"])
+                if "default" in limit_item:
+                    default_vals = limit_item["default"]
+                    if "cpu" in default_vals:
+                        container_limits["defaultCpu"] = to_str(default_vals["cpu"])
+                    if "memory" in default_vals:
+                        container_limits["defaultMemory"] = to_str(default_vals["memory"])
+                if "defaultRequest" in limit_item:
+                    default_req = limit_item["defaultRequest"]
+                    if "cpu" in default_req:
+                        container_limits["defaultRequestCpu"] = to_str(default_req["cpu"])
+                    if "memory" in default_req:
+                        container_limits["defaultRequestMemory"] = to_str(default_req["memory"])
+
+    # Build output structure
+    out: Dict[str, Any] = {"enabled": True}
+
+    if pod_limits:
+        out["pod"] = pod_limits
+    if container_limits:
+        out["container"] = container_limits
+
+    # If no actual limits were found, disable
+    if not pod_limits and not container_limits:
+        out["enabled"] = False
+
+    return out
+
+
 def validate_namespace(namespace: str) -> Tuple[bool, str]:
     """
     Validate namespace against Kubernetes naming rules (RFC 1123 label).
@@ -236,12 +330,23 @@ def convert_team(
             "adgroup": "",
             "request_id": "",
             "repositories": [],
-            "applications": [],
+            "application": {
+                "enabled": True,
+                "name": "",
+                "repoURL": "",
+                "path": "",
+                "targetRevision": "",
+                "chart": "",
+                "sourceType": "",
+            },
             "resourceQuota": {
-                "enabled": False,
+                "enabled": True,
                 "cpu": {"requests": "", "limits": ""},
                 "memory": {"requests": "", "limits": ""},
                 "storage": "",
+            },
+            "limitRange": {
+                "enabled": True,
             },
         }
 
@@ -259,6 +364,14 @@ def convert_team(
 
         # set extracted quota
         values["resourceQuota"] = resource_quota
+
+        # Extract LimitRange (optional - may not exist in all quota files)
+        try:
+            limit_range = extract_limit_range(doc)
+            values["limitRange"] = limit_range
+        except Exception as e:
+            # LimitRange extraction failed - log warning but continue
+            print(f"WARN {ns_id}: failed to extract LimitRange (continuing): {e}")
 
         try:
             out_file = out_dir / f"{env}.yaml"

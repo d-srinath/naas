@@ -146,6 +146,100 @@ def extract_resource_quota(quota_doc: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def extract_limit_range(quota_doc: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract LimitRange objects and merge into a single Helm-compatible structure.
+
+    Input quota_doc is expected to be either:
+      - a Template-like object with `objects: [...]` containing LimitRange(s)
+      - OR a plain LimitRange object
+
+    Merges multiple LimitRanges (e.g., memory-small, cpu-medium) into one structure
+    with separate Pod and Container limits.
+    """
+    limit_ranges: List[Dict[str, Any]] = []
+
+    if isinstance(quota_doc, dict) and quota_doc.get("kind") == "LimitRange":
+        limit_ranges.append(quota_doc)
+    else:
+        for obj in quota_doc.get("objects", []):
+            if isinstance(obj, dict) and obj.get("kind") == "LimitRange":
+                limit_ranges.append(obj)
+
+    if not limit_ranges:
+        # No LimitRange found - return disabled structure
+        return {"enabled": False}
+
+    # Initialize merged structure
+    pod_limits: Dict[str, Any] = {}
+    container_limits: Dict[str, Any] = {}
+
+    def to_str(val: Any) -> str:
+        return "" if val is None else str(val)
+
+    # Process all LimitRange objects and merge their limits
+    for lr in limit_ranges:
+        spec_limits = lr.get("spec", {}).get("limits", []) or []
+        for limit_item in spec_limits:
+            limit_type = limit_item.get("type", "")
+
+            if limit_type == "Pod":
+                # Pod-level limits: min, max
+                if "max" in limit_item:
+                    max_vals = limit_item["max"]
+                    if "cpu" in max_vals:
+                        pod_limits["maxCpu"] = to_str(max_vals["cpu"])
+                    if "memory" in max_vals:
+                        pod_limits["maxMemory"] = to_str(max_vals["memory"])
+                if "min" in limit_item:
+                    min_vals = limit_item["min"]
+                    if "cpu" in min_vals:
+                        pod_limits["minCpu"] = to_str(min_vals["cpu"])
+                    if "memory" in min_vals:
+                        pod_limits["minMemory"] = to_str(min_vals["memory"])
+
+            elif limit_type == "Container":
+                # Container-level limits: min, max, default, defaultRequest
+                if "max" in limit_item:
+                    max_vals = limit_item["max"]
+                    if "cpu" in max_vals:
+                        container_limits["maxCpu"] = to_str(max_vals["cpu"])
+                    if "memory" in max_vals:
+                        container_limits["maxMemory"] = to_str(max_vals["memory"])
+                if "min" in limit_item:
+                    min_vals = limit_item["min"]
+                    if "cpu" in min_vals:
+                        container_limits["minCpu"] = to_str(min_vals["cpu"])
+                    if "memory" in min_vals:
+                        container_limits["minMemory"] = to_str(min_vals["memory"])
+                if "default" in limit_item:
+                    default_vals = limit_item["default"]
+                    if "cpu" in default_vals:
+                        container_limits["defaultCpu"] = to_str(default_vals["cpu"])
+                    if "memory" in default_vals:
+                        container_limits["defaultMemory"] = to_str(default_vals["memory"])
+                if "defaultRequest" in limit_item:
+                    default_req = limit_item["defaultRequest"]
+                    if "cpu" in default_req:
+                        container_limits["defaultRequestCpu"] = to_str(default_req["cpu"])
+                    if "memory" in default_req:
+                        container_limits["defaultRequestMemory"] = to_str(default_req["memory"])
+
+    # Build output structure
+    out: Dict[str, Any] = {"enabled": True}
+
+    if pod_limits:
+        out["pod"] = pod_limits
+    if container_limits:
+        out["container"] = container_limits
+
+    # If no actual limits were found, disable
+    if not pod_limits and not container_limits:
+        out["enabled"] = False
+
+    return out
+
+
 def validate_namespace(namespace: str) -> Tuple[bool, str]:
     """
     Validate namespace against Kubernetes naming rules (RFC 1123 label).
@@ -256,6 +350,9 @@ def convert_team(
                 "memory": {"requests": "", "limits": ""},
                 "storage": "",
             },
+            "limitRange": {
+                "enabled": False,
+            },
         }
 
         # merge mapped properties
@@ -272,6 +369,14 @@ def convert_team(
 
         # set extracted quota
         values["resourceQuota"] = resource_quota
+
+        # Extract LimitRange (optional - may not exist in all quota files)
+        try:
+            limit_range = extract_limit_range(doc)
+            values["limitRange"] = limit_range
+        except Exception as e:
+            # LimitRange extraction failed - log warning but continue
+            print(f"WARN {ns_id}: failed to extract LimitRange (continuing): {e}")
 
         try:
             out_file = out_dir / f"{env}.yaml"
@@ -364,6 +469,75 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ENDFILE
 
+# ============== scripts/test_convert_all.py ==============
+cat > scripts/test_convert_all.py << 'ENDFILE'
+#!/usr/bin/env python3
+"""
+Tests for convert_all.py - Run with: pytest scripts/test_convert_all.py -v
+"""
+import pytest
+from pathlib import Path
+from convert_all import (
+    parse_properties, extract_resource_quota, extract_limit_range,
+    validate_namespace, set_nested, convert_team,
+)
+
+class TestSetNested:
+    def test_nested(self):
+        d = {}
+        set_nested(d, "a.b.c", "value")
+        assert d == {"a": {"b": {"c": "value"}}}
+
+class TestParseProperties:
+    def test_basic(self, tmp_path):
+        f = tmp_path / "p.properties"
+        f.write_text("PROJECT_DOMAIN=test\nAD_GROUP=ADMINS")
+        r = parse_properties(f)
+        assert r["project"]["domain"] == "test"
+        assert r["adgroup"] == "ADMINS"
+
+class TestExtractResourceQuota:
+    def test_template(self):
+        doc = {"kind": "Template", "objects": [{"kind": "ResourceQuota", "spec": {"hard": {"requests.cpu": "2", "limits.cpu": "4"}}}]}
+        r = extract_resource_quota(doc)
+        assert r["enabled"] and r["cpu"]["requests"] == "2"
+
+    def test_missing_raises(self):
+        with pytest.raises(ValueError):
+            extract_resource_quota({"kind": "Template", "objects": []})
+
+class TestExtractLimitRange:
+    def test_merge(self):
+        doc = {"kind": "Template", "objects": [
+            {"kind": "LimitRange", "spec": {"limits": [{"type": "Container", "max": {"memory": "4Gi"}}]}},
+            {"kind": "LimitRange", "spec": {"limits": [{"type": "Container", "max": {"cpu": "2"}}]}}
+        ]}
+        r = extract_limit_range(doc)
+        assert r["container"]["maxMemory"] == "4Gi" and r["container"]["maxCpu"] == "2"
+
+    def test_disabled_when_empty(self):
+        assert extract_limit_range({"objects": []})["enabled"] is False
+
+class TestValidateNamespace:
+    def test_valid(self):
+        assert validate_namespace("my-ns")[0] is True
+    def test_invalid_uppercase(self):
+        assert validate_namespace("MyNS")[0] is False
+
+class TestConvertTeam:
+    def test_conversion(self, tmp_path):
+        team = tmp_path / "input" / "test"
+        team.mkdir(parents=True)
+        (team / "project.properties").write_text("AD_GROUP=ADMINS")
+        (team / "test-dev-quotas.yml").write_text("kind: ResourceQuota\nspec:\n  hard:\n    requests.cpu: 1")
+        errors = []
+        assert convert_team(team, tmp_path / "out", "{team}-{env}-1", errors) == 1
+        assert (tmp_path / "out" / "test" / "dev.yaml").exists()
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
+ENDFILE
+
 # ============== charts/namespace-onboarding/Chart.yaml ==============
 cat > charts/namespace-onboarding/Chart.yaml << 'ENDFILE'
 apiVersion: v2
@@ -378,6 +552,7 @@ ENDFILE
 cat > charts/namespace-onboarding/values.yaml << 'ENDFILE'
 # Default values for namespace-onboarding.
 # These values are overridden per namespace by generated values files.
+# All resources are ENABLED by default - set enabled: false to disable.
 
 team: ""
 namespace: ""
@@ -385,6 +560,7 @@ namespace: ""
 # Project metadata used for labels/annotations and documentation
 project:
   domain: ""
+  email: ""
   manager: ""
   code: ""
   cost_center: ""
@@ -392,7 +568,7 @@ project:
   created_by: ""
   cmdb_application: ""
 
-# LDAP group for admin access
+# LDAP group for admin access (required for RoleBinding and AppProject)
 adgroup: ""
 
 # Request tracking ID
@@ -401,21 +577,21 @@ request_id: ""
 # Allowed source repos for Argo project
 repositories: []
 
-# Apps to deploy (optional)
-# Each application can have:
-#   - name: Application name (defaults to namespace name)
-#   - repoURL: Git repo or OCI registry URL
-#   - path: Path within repo (for git sources)
-#   - chart: Chart name (for OCI/Helm sources)
-#   - targetRevision: Branch/tag/commit (default: "main")
-#   - sourceType: "helm", "kustomize", or "" for plain manifests
-#   - helm:
-#       valueFiles: [list of values files]
-applications: []
+# ArgoCD Application configuration
+# Enabled by default - requires repoURL at minimum
+# If repoURL is not provided, application will not be created
+application:
+  enabled: true
+  name: ""           # defaults to namespace name
+  repoURL: ""        # REQUIRED - Git repo or OCI registry URL
+  path: ""           # defaults to root path
+  targetRevision: "" # defaults to "main"
+  chart: ""          # for OCI/Helm sources (mutually exclusive with path)
+  sourceType: ""     # "helm", "kustomize", or "" for plain manifests
 
-# Resource quota limits for the namespace
+# Resource quota limits for the namespace (enabled by default)
 resourceQuota:
-  enabled: false
+  enabled: true
   cpu:
     requests: ""
     limits: ""
@@ -424,6 +600,27 @@ resourceQuota:
     limits: ""
   storage: ""
   pods: ""
+
+# LimitRange for default/min/max resource constraints (enabled by default)
+# Merged from multiple LimitRange objects in input (e.g., memory-small, cpu-medium)
+limitRange:
+  enabled: true
+  # Pod-level limits
+  pod:
+    maxCpu: ""
+    maxMemory: ""
+    minCpu: ""
+    minMemory: ""
+  # Container-level limits
+  container:
+    maxCpu: ""
+    maxMemory: ""
+    minCpu: ""
+    minMemory: ""
+    defaultCpu: ""
+    defaultMemory: ""
+    defaultRequestCpu: ""
+    defaultRequestMemory: ""
 ENDFILE
 
 # ============== charts/namespace-onboarding/templates/namespace.yaml ==============
@@ -434,30 +631,40 @@ metadata:
   name: {{ .Values.namespace | quote }}
   labels:
     team: {{ .Values.team | quote }}
-    project.domain: {{ .Values.project.domain | quote }}
-    project.manager: {{ .Values.project.manager | quote }}
-    adgroup: {{ .Values.adgroup | quote }}
+    project.ocp.bcbsfl.com/project_domain: {{ .Values.project.domain | default "na" | quote }}
+    project.ocp.bcbsfl.com/email: {{ .Values.project.email | default "" | quote }}
+    project.ocp.bcbsfl.com/project_manager: {{ .Values.project.manager | default "na" | quote }}
+    project.ocp.bcbsfl.com/adgroup: {{ .Values.adgroup | default "" | quote }}
+    project.ocp.bcbsfl.com/project_cost_center: {{ .Values.project.cost_center | default "na" | quote }}
+    project.ocp.bcbsfl.com/project_code: {{ .Values.project.code | default "" | quote }}
+    project.ocp.bcbsfl.com/request_id: {{ .Values.request_id | default "" | quote }}
+    project.ocp.bcbsfl.com/created_by: {{ .Values.project.created_by | default "" | quote }}
+    project.ocp.bcbsfl.com/create_date: {{ .Values.project.create_date | default "" | quote }}
+    project.ocp.bcbsfl.com/cmdb_application: {{ .Values.project.cmdb_application | default "na" | quote }}
+    argocd.argoproj.io/managed-by: applications-gitops
 ENDFILE
 
 # ============== charts/namespace-onboarding/templates/resourcequota.yaml ==============
 cat > charts/namespace-onboarding/templates/resourcequota.yaml << 'ENDFILE'
-{{- if and .Values.resourceQuota .Values.resourceQuota.enabled }}
+{{- if .Values.resourceQuota }}
+{{- if .Values.resourceQuota.enabled }}
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: {{ printf "%s-quota" .Values.namespace | quote }}
-  namespace: {{ .Values.namespace | quote }}
+  name: {{ .Values.namespace }}-quota
+  namespace: {{ .Values.namespace }}
   labels:
-    team: {{ .Values.team | quote }}
+    team: {{ .Values.team }}
+    argocd.argoproj.io/managed-by: applications-gitops
 spec:
   hard:
     {{- if .Values.resourceQuota.cpu }}
-    requests.cpu: {{ .Values.resourceQuota.cpu.requests | default "0" | quote }}
-    limits.cpu: {{ .Values.resourceQuota.cpu.limits | default "0" | quote }}
+    requests.cpu: {{ .Values.resourceQuota.cpu.requests | quote }}
+    limits.cpu: {{ .Values.resourceQuota.cpu.limits | quote }}
     {{- end }}
     {{- if .Values.resourceQuota.memory }}
-    requests.memory: {{ .Values.resourceQuota.memory.requests | default "0" | quote }}
-    limits.memory: {{ .Values.resourceQuota.memory.limits | default "0" | quote }}
+    requests.memory: {{ .Values.resourceQuota.memory.requests | quote }}
+    limits.memory: {{ .Values.resourceQuota.memory.limits | quote }}
     {{- end }}
     {{- if .Values.resourceQuota.storage }}
     requests.storage: {{ .Values.resourceQuota.storage | quote }}
@@ -465,6 +672,7 @@ spec:
     {{- if .Values.resourceQuota.pods }}
     pods: {{ .Values.resourceQuota.pods | quote }}
     {{- end }}
+{{- end }}
 {{- end }}
 ENDFILE
 
@@ -474,17 +682,18 @@ cat > charts/namespace-onboarding/templates/rolebinding.yaml << 'ENDFILE'
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ printf "%s-admin" .Values.team | quote }}
-  namespace: {{ .Values.namespace | quote }}
+  name: {{ .Values.team }}-admin
+  namespace: {{ .Values.namespace }}
   labels:
-    team: {{ .Values.team | quote }}
+    team: {{ .Values.team }}
+    argocd.argoproj.io/managed-by: applications-gitops
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: admin
 subjects:
   - kind: Group
-    name: {{ .Values.adgroup | quote }}
+    name: {{ .Values.adgroup }}
     apiGroup: rbac.authorization.k8s.io
 {{- end }}
 ENDFILE
@@ -548,65 +757,143 @@ spec:
 {{- end }}
 ENDFILE
 
+# ============== charts/namespace-onboarding/templates/limitrange.yaml ==============
+cat > charts/namespace-onboarding/templates/limitrange.yaml << 'ENDFILE'
+{{- if .Values.limitRange }}
+{{- if .Values.limitRange.enabled }}
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: {{ .Values.namespace }}-limits
+  namespace: {{ .Values.namespace }}
+  labels:
+    team: {{ .Values.team }}
+    argocd.argoproj.io/managed-by: applications-gitops
+spec:
+  limits:
+    {{- if .Values.limitRange.pod }}
+    - type: Pod
+      {{- if or .Values.limitRange.pod.maxCpu .Values.limitRange.pod.maxMemory }}
+      max:
+        {{- if .Values.limitRange.pod.maxCpu }}
+        cpu: {{ .Values.limitRange.pod.maxCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.pod.maxMemory }}
+        memory: {{ .Values.limitRange.pod.maxMemory | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.limitRange.pod.minCpu .Values.limitRange.pod.minMemory }}
+      min:
+        {{- if .Values.limitRange.pod.minCpu }}
+        cpu: {{ .Values.limitRange.pod.minCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.pod.minMemory }}
+        memory: {{ .Values.limitRange.pod.minMemory | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.limitRange.container }}
+    - type: Container
+      {{- if or .Values.limitRange.container.maxCpu .Values.limitRange.container.maxMemory }}
+      max:
+        {{- if .Values.limitRange.container.maxCpu }}
+        cpu: {{ .Values.limitRange.container.maxCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.container.maxMemory }}
+        memory: {{ .Values.limitRange.container.maxMemory | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.limitRange.container.minCpu .Values.limitRange.container.minMemory }}
+      min:
+        {{- if .Values.limitRange.container.minCpu }}
+        cpu: {{ .Values.limitRange.container.minCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.container.minMemory }}
+        memory: {{ .Values.limitRange.container.minMemory | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.limitRange.container.defaultCpu .Values.limitRange.container.defaultMemory }}
+      default:
+        {{- if .Values.limitRange.container.defaultCpu }}
+        cpu: {{ .Values.limitRange.container.defaultCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.container.defaultMemory }}
+        memory: {{ .Values.limitRange.container.defaultMemory | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.limitRange.container.defaultRequestCpu .Values.limitRange.container.defaultRequestMemory }}
+      defaultRequest:
+        {{- if .Values.limitRange.container.defaultRequestCpu }}
+        cpu: {{ .Values.limitRange.container.defaultRequestCpu | quote }}
+        {{- end }}
+        {{- if .Values.limitRange.container.defaultRequestMemory }}
+        memory: {{ .Values.limitRange.container.defaultRequestMemory | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+ENDFILE
+
 # ============== charts/namespace-onboarding/templates/application.yaml ==============
 cat > charts/namespace-onboarding/templates/application.yaml << 'ENDFILE'
-{{- range .Values.applications }}
----
+{{- if .Values.application }}
+{{- if .Values.application.enabled }}
+{{- if .Values.application.repoURL }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ .name | default $.Values.namespace | quote }}
+  name: {{ .Values.application.name | default .Values.namespace }}
   namespace: applications-gitops
   labels:
-    team: {{ $.Values.team | quote }}
+    team: {{ .Values.team }}
     argocd.argoproj.io/managed-by: applications-gitops
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  # Use the project with the same name as the namespace
-  project: {{ $.Values.namespace | quote }}
+  project: {{ .Values.namespace }}
   source:
-    repoURL: {{ .repoURL | quote }}
-    targetRevision: {{ .targetRevision | default "main" | quote }}
-    {{- if .chart }}
-    # OCI chart reference
-    chart: {{ .chart | quote }}
+    repoURL: {{ .Values.application.repoURL }}
+    targetRevision: {{ .Values.application.targetRevision | default "main" }}
+    {{- if .Values.application.chart }}
+    chart: {{ .Values.application.chart }}
     {{- else }}
-    # Git path reference
-    path: {{ .path | quote }}
+    path: {{ .Values.application.path | default "." }}
     {{- end }}
-    {{- if eq .sourceType "helm" }}
-    {{- if and .helm .helm.valueFiles }}
-    helm:
-      valueFiles:
-        {{- range .helm.valueFiles }}
-        - {{ . | quote }}
-        {{- end }}
-    {{- else }}
+    {{- if eq .Values.application.sourceType "helm" }}
     helm: {}
-    {{- end }}
-    {{- else if eq .sourceType "kustomize" }}
+    {{- else if eq .Values.application.sourceType "kustomize" }}
     kustomize: {}
     {{- else }}
-    # Plain directory (vanilla K8s manifests) - no special config needed
     directory:
       recurse: true
     {{- end }}
   destination:
     server: https://kubernetes.default.svc
-    namespace: {{ $.Values.namespace | quote }}
+    namespace: {{ .Values.namespace }}
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+{{- end }}
+{{- end }}
 {{- end }}
 ENDFILE
 
 echo ""
 echo "Done! Files extracted:"
 echo "  - scripts/convert_all.py"
-echo "  - charts/namespace-onboarding/ (Chart.yaml, values.yaml, templates/*)"
+echo "  - scripts/test_convert_all.py"
+echo "  - charts/namespace-onboarding/"
+echo "    - Chart.yaml, values.yaml"
+echo "    - templates/namespace.yaml"
+echo "    - templates/resourcequota.yaml"
+echo "    - templates/limitrange.yaml"
+echo "    - templates/rolebinding.yaml"
+echo "    - templates/appproject.yaml"
+echo "    - templates/application.yaml"
 echo ""
 echo "Usage:"
-echo "  pip install pyyaml"
+echo "  pip install pyyaml pytest"
 echo "  python3 scripts/convert_all.py --input-root <your-input> --output-root <your-output>"
+echo "  pytest scripts/test_convert_all.py -v"

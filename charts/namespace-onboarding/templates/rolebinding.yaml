@@ -2,16 +2,17 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ printf "%s-admin" .Values.team | quote }}
-  namespace: {{ .Values.namespace | quote }}
+  name: {{ .Values.team }}-admin
+  namespace: {{ .Values.namespace }}
   labels:
-    team: {{ .Values.team | quote }}
+    team: {{ .Values.team }}
+    argocd.argoproj.io/managed-by: applications-gitops
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: admin
 subjects:
   - kind: Group
-    name: {{ .Values.adgroup | quote }}
+    name: {{ .Values.adgroup }}
     apiGroup: rbac.authorization.k8s.io
 {{- end }}

@@ -4,6 +4,14 @@ metadata:
   name: {{ .Values.namespace | quote }}
   labels:
     team: {{ .Values.team | quote }}
-    project.domain: {{ .Values.project.domain | quote }}
-    project.manager: {{ .Values.project.manager | quote }}
-    adgroup: {{ .Values.adgroup | quote }}
+    project.ocp.bcbsfl.com/project_domain: {{ .Values.project.domain | default "na" | quote }}
+    project.ocp.bcbsfl.com/email: {{ .Values.project.email | default "" | quote }}
+    project.ocp.bcbsfl.com/project_manager: {{ .Values.project.manager | default "na" | quote }}
+    project.ocp.bcbsfl.com/adgroup: {{ .Values.adgroup | default "" | quote }}
+    project.ocp.bcbsfl.com/project_cost_center: {{ .Values.project.cost_center | default "na" | quote }}
+    project.ocp.bcbsfl.com/project_code: {{ .Values.project.code | default "" | quote }}
+    project.ocp.bcbsfl.com/request_id: {{ .Values.request_id | default "" | quote }}
+    project.ocp.bcbsfl.com/created_by: {{ .Values.project.created_by | default "" | quote }}
+    project.ocp.bcbsfl.com/create_date: {{ .Values.project.create_date | default "" | quote }}
+    project.ocp.bcbsfl.com/cmdb_application: {{ .Values.project.cmdb_application | default "na" | quote }}
+    argocd.argoproj.io/managed-by: applications-gitops
