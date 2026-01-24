@@ -496,14 +496,19 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: {{ .Values.namespace | quote }}
-  namespace: "argocd"
+  namespace: applications-gitops
   labels:
     team: {{ .Values.team | quote }}
+    argocd.argoproj.io/managed-by: applications-gitops
 spec:
   description: {{ printf "Project for %s - %s" .Values.team .Values.namespace | quote }}
+
+  # Only allow deploying to this specific namespace
   destinations:
     - namespace: {{ .Values.namespace | quote }}
       server: https://kubernetes.default.svc
+
+  # Source repositories allowed for this project
   sourceRepos:
     {{- if .Values.repositories }}
     {{- range .Values.repositories }}
@@ -512,6 +517,34 @@ spec:
     {{- else }}
     - "*"
     {{- end }}
+
+  # Cluster resources that can be managed (none - namespace-scoped only)
+  clusterResourceWhitelist: []
+
+  # Namespace resources that can be managed
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  # RBAC roles for the project
+  roles:
+    - name: admin
+      description: {{ printf "Admin access for %s - can manage resources but not create apps" .Values.adgroup | quote }}
+      policies:
+        # Allow all actions on applications EXCEPT create
+        - p, proj:{{ .Values.namespace }}:admin, applications, get, {{ .Values.namespace }}/*, allow
+        - p, proj:{{ .Values.namespace }}:admin, applications, sync, {{ .Values.namespace }}/*, allow
+        - p, proj:{{ .Values.namespace }}:admin, applications, delete, {{ .Values.namespace }}/*, allow
+        - p, proj:{{ .Values.namespace }}:admin, applications, update, {{ .Values.namespace }}/*, allow
+        - p, proj:{{ .Values.namespace }}:admin, applications, override, {{ .Values.namespace }}/*, allow
+        - p, proj:{{ .Values.namespace }}:admin, applications, action/*, {{ .Values.namespace }}/*, allow
+        # Deny create operations for applications and applicationsets
+        - p, proj:{{ .Values.namespace }}:admin, applications, create, {{ .Values.namespace }}/*, deny
+        # Allow viewing logs and exec
+        - p, proj:{{ .Values.namespace }}:admin, logs, get, {{ .Values.namespace }}/*, allow
+        - p, proj:{{ .Values.namespace }}:admin, exec, create, {{ .Values.namespace }}/*, allow
+      groups:
+        - {{ .Values.adgroup | quote }}
 {{- end }}
 ENDFILE
 
