@@ -1,0 +1,25 @@
+{{- if and .Values.resourceQuota .Values.resourceQuota.enabled }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ printf "%s-quota" .Values.namespace | quote }}
+  namespace: {{ .Values.namespace | quote }}
+  labels:
+    team: {{ .Values.team | quote }}
+spec:
+  hard:
+    {{- if .Values.resourceQuota.cpu }}
+    requests.cpu: {{ .Values.resourceQuota.cpu.requests | default "0" | quote }}
+    limits.cpu: {{ .Values.resourceQuota.cpu.limits | default "0" | quote }}
+    {{- end }}
+    {{- if .Values.resourceQuota.memory }}
+    requests.memory: {{ .Values.resourceQuota.memory.requests | default "0" | quote }}
+    limits.memory: {{ .Values.resourceQuota.memory.limits | default "0" | quote }}
+    {{- end }}
+    {{- if .Values.resourceQuota.storage }}
+    requests.storage: {{ .Values.resourceQuota.storage | quote }}
+    {{- end }}
+    {{- if .Values.resourceQuota.pods }}
+    pods: {{ .Values.resourceQuota.pods | quote }}
+    {{- end }}
+{{- end }}

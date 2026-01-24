@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: resource-cpu-memory
+objects:
+  - apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: x-small
+    spec:
+      hard:
+        requests.cpu: 2
+        limits.cpu: 4
+        requests.memory: 4Gi
+        limits.memory: 12Gi
+        requests.storage: 4Gi
+  - apiVersion: v1
+    kind: LimitRange
+    metadata:
+      name: cpu-small
+    spec:
+      limits:
+        - type: Container
+          default:
+            cpu: 100m
+          defaultRequest:
+            cpu: 100m
+          max:
+            cpu: 500m
+          min:
+            cpu: 5m

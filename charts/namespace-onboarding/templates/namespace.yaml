@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace | quote }}
+  labels:
+    team: {{ .Values.team | quote }}
+    project.domain: {{ .Values.project.domain | quote }}
+    project.manager: {{ .Values.project.manager | quote }}
+    adgroup: {{ .Values.adgroup | quote }}

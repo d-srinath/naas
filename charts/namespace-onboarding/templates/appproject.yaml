@@ -1,0 +1,22 @@
+{{- if .Values.adgroup }}
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ .Values.namespace | quote }}
+  namespace: "argocd"
+  labels:
+    team: {{ .Values.team | quote }}
+spec:
+  description: {{ printf "Project for %s - %s" .Values.team .Values.namespace | quote }}
+  destinations:
+    - namespace: {{ .Values.namespace | quote }}
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    {{- if .Values.repositories }}
+    {{- range .Values.repositories }}
+    - {{ .url | quote }}
+    {{- end }}
+    {{- else }}
+    - "*"
+    {{- end }}
+{{- end }}

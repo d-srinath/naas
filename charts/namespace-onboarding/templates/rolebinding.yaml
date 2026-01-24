@@ -1,0 +1,17 @@
+{{- if .Values.adgroup }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ printf "%s-admin" .Values.team | quote }}
+  namespace: {{ .Values.namespace | quote }}
+  labels:
+    team: {{ .Values.team | quote }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+  - kind: Group
+    name: {{ .Values.adgroup | quote }}
+    apiGroup: rbac.authorization.k8s.io
+{{- end }}
