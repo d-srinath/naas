@@ -1,0 +1,129 @@
+Subject:
+OVN-Kubernetes ignoring host routing table after SDN migration – secondary NIC egress not working
+
+Description:
+We recently migrated our OpenShift cluster from OpenShift SDN to OVN-Kubernetes.
+Before migration, egress traffic to our management cluster (NSM) was routed through a secondary network interface (backend NIC) based on host routing table entries. This worked as expected.
+After migrating to OVN-Kubernetes:
+
+
+Traffic that should egress through the secondary NIC is now exiting through the primary interface (attached to br-ex).
+
+
+As a result, communication to NSM over ports 443 and 6443 is failing due to firewall restrictions on the primary interface.
+
+
+The host routing table is correctly configured to send specific subnets via the secondary NIC.
+
+
+However, pod egress traffic appears to ignore the host routing table.
+
+
+
+What We Have Tried:
+
+
+Reviewed Red Hat KBase article: “OVN-Kubernetes ignores host routes for outgoing traffic”
+
+
+Applied:
+
+
+spec.gatewayConfig.routingViaHost=true
+
+
+
+
+Tested and observed unexpected behavior (issue persisted and caused additional side effects, so change was reverted).
+
+
+Verified host routing table entries are correct.
+
+
+Confirmed secondary NIC is configured and reachable at node level.
+
+
+
+Current Impact:
+
+
+Management cluster (NSM) connectivity is failing.
+
+
+ACS communication and vulnerability data synchronization are impacted.
+
+
+Traffic is incorrectly exiting via the primary NIC instead of the defined secondary NIC.
+
+
+
+Request:
+We would like assistance troubleshooting why OVN-Kubernetes is not honoring the host routing table for secondary NIC egress after SDN → OVN migration.
+Specifically:
+
+
+Confirm correct configuration for enabling secondary NIC egress
+
+
+Validate whether routingViaHost and/or ipForwarding=Global is required in our version
+
+
+Identify if additional configuration is needed post-migration
+
+
+We can provide:
+
+
+network.operator configuration
+
+
+ip route output
+
+
+OVN configuration details
+
+
+tcpdump results
+
+
+Cluster version details
+
+
+
+Thank you.
+
+✅ Why This Is Good
+
+
+Clear root cause
+
+
+Mentions migration
+
+
+Mentions KBase
+
+
+Mentions impact (important for priority)
+
+
+Not too long
+
+
+Leaves room for them to request logs
+
+
+
+If you want, I can also give you:
+
+
+🔥 A “high priority / business impact” version
+
+
+📋 A version formatted exactly like Red Hat portal fields
+
+
+🧠 A checklist of logs to attach immediately
+
+
+Just tell me 👍
