@@ -1,9 +1,7 @@
-
-
 Thank you for the update.
-As per the KBase article, it mentions that the ipForwarding: Global setting applies to clusters built on OpenShift 4.14 and later.
-Our clusters were originally built around OpenShift 4.3/4.4 and later upgraded.
-Previously, we tested routingViaHost: true, but we did not apply ipForwarding: Global.
-Before proceeding further, could you please confirm whether ipForwarding: Global is required in our case given the original cluster build version?
-We would like to ensure this setting is applicable before making additional changes in production.
+To clarify, we are not using the OpenShift EgressIP feature in this environment. There are no EgressIP resources configured.
+Each worker node has a secondary NIC configured for specific backend subnets. Prior to the SDN → OVN migration, traffic destined for those subnets correctly routed via the secondary interface based on the host routing table.
+After migration to OVN-Kubernetes, traffic that should egress via the secondary NIC is instead exiting through the primary interface, even though the host routing table appears correct.
+This appears to be a routing behavior issue rather than an EgressIP configuration issue.
+Please advise on the correct approach for ensuring traffic respects the secondary NIC routing in OVN.
 Thank you.
