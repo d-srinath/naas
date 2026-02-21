@@ -12,3 +12,14 @@ helm repo update
 helm install bamoe bamoe/bamoe --namespace bamoe-runtime
 oc get pods -n bamoe-runtime
 oc get route -n bamoe-runtime
+
+
+
+oc login https://api.<your-cluster-url>
+oc new-project bamoe-canvas
+oc get ingresses.config cluster --output jsonpath={.spec.domain}
+export OPENSHIFT_DOMAIN=apps.sandbox.cluster.com
+helm pull oci://quay.io/bamoe/canvas-helm-chart --version 9.3.1 --untar
+helm install my-bamoe-canvas ./canvas-helm-chart --namespace bamoe-canvas --values ./canvas-helm-chart/values-openshift.yaml --set global.openshiftRouteDomain=${OPENSHIFT_DOMAIN}
+oc get pods -n bamoe-canvas
+oc get route -n bamoe-canvas
