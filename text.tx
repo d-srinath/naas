@@ -1,7 +1,14 @@
-Thank you for the update.
-To clarify, we are not using the OpenShift EgressIP feature in this environment. There are no EgressIP resources configured.
-Each worker node has a secondary NIC configured for specific backend subnets. Prior to the SDN → OVN migration, traffic destined for those subnets correctly routed via the secondary interface based on the host routing table.
-After migration to OVN-Kubernetes, traffic that should egress via the secondary NIC is instead exiting through the primary interface, even though the host routing table appears correct.
-This appears to be a routing behavior issue rather than an EgressIP configuration issue.
-Please advise on the correct approach for ensuring traffic respects the secondary NIC routing in OVN.
-Thank you.
+oc login https://api.<your-cluster-url>
+oc new-project bamoe-dev
+export BAMOE_MAVEN_REPOSITORY_IMAGE=quay.io/bamoe/maven-repository:9.3.1-ibm-0006
+oc new-app ${BAMOE_MAVEN_REPOSITORY_IMAGE} --name bamoe-maven-repo
+oc create route edge --service=bamoe-maven-repo
+oc get route bamoe-maven-repo --output jsonpath={.spec.host}
+oc get pods
+oc new-project bamoe-runtime
+helm version
+helm repo add bamoe https://<helm-repo-url>
+helm repo update
+helm install bamoe bamoe/bamoe --namespace bamoe-runtime
+oc get pods -n bamoe-runtime
+oc get route -n bamoe-runtime
