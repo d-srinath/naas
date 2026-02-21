@@ -23,3 +23,29 @@ helm pull oci://quay.io/bamoe/canvas-helm-chart --version 9.3.1 --untar
 helm install my-bamoe-canvas ./canvas-helm-chart --namespace bamoe-canvas --values ./canvas-helm-chart/values-openshift.yaml --set global.openshiftRouteDomain=${OPENSHIFT_DOMAIN}
 oc get pods -n bamoe-canvas
 oc get route -n bamoe-canvas
+
+
+
+oc new-project bamoe-canvas
+oc project bamoe-canvas
+
+export APP_PART_OF=bamoe-canvas-app
+export APP_NAME_EXTENDED_SERVICES=bamoe-extended-services
+export APP_NAME_CORS_PROXY=bamoe-cors-proxy
+export APP_NAME_BAMOE_CANVAS=bamoe-canvas
+
+oc new-app quay.io/bamoe/extended-services:9.3.1-ibm-0006 --name=$APP_NAME_EXTENDED_SERVICES
+oc create route edge --service=$APP_NAME_EXTENDED_SERVICES
+
+oc new-app quay.io/bamoe/cors-proxy:9.3.1-ibm-0006 --name=$APP_NAME_CORS_PROXY
+oc create route edge --service=$APP_NAME_CORS_PROXY
+
+oc new-app quay.io/bamoe/canvas:9.3.1-ibm-0006 \
+  --name=$APP_NAME_BAMOE_CANVAS \
+  -e KIE_SANDBOX_EXTENDED_SERVICES_URL=https://$(oc get route $APP_NAME_EXTENDED_SERVICES -o jsonpath='{.spec.host}') \
+  -e KIE_SANDBOX_CORS_PROXY_URL=https://$(oc get route $APP_NAME_CORS_PROXY -o jsonpath='{.spec.host}')
+
+oc create route edge --service=$APP_NAME_BAMOE_CANVAS
+
+oc get pods
+oc get route
