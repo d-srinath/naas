@@ -1,10 +1,5 @@
-As per the latest Red Hat documentation, I do not see any update indicating that DFS is supported. DFS is still listed under the limitations for the SMB CSI driver.
-If needed, we can open a case with Red Hat Support to reconfirm whether there have been any recent changes.
-Thanks,
-Sai
-✅ Reply to Eli (SMB / Non-DFS Share)
-Hi Eli,
-As per the documented limitations, DFS is not supported. However, a standard SMB share (direct UNC path) should be supported by the SMB CSI driver.
-Since we do not see any specific restriction for non-DFS SMB shares, we can proceed with a small POC to validate mounting and writing from a pod before confirming fully.
-Thanks,
-Sai
+RUN npm ci --production \
+  --registry https://artifactory.bcbsfl.com/artifactory/api/npm/npm-libs-virtual/ \
+  --fetch-retries=5 \
+  --fetch-retry-mintimeout=20000 \
+  --fetch-retry-maxtimeout=120000
