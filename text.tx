@@ -1,3 +1,32 @@
+# 1. Switch to the namespace where BAMOE Canvas should run
+oc project bamoe-canvas
+
+# 2. Capture backend routes (Extended Services and CORS Proxy)
+export EXT_URL=https://$(oc get route bamoe-extended-services -o jsonpath='{.spec.host}')
+export CORS_URL=https://$(oc get route bamoe-cors-proxy -o jsonpath='{.spec.host}')
+
+# 3. Create the BAMOE Canvas deployment
+oc create deployment bamoe-canvas --image=quay.io/bamoe/canvas:9.3.1-ibm-0006
+
+# 4. Set required environment variables for Canvas to talk to backend services
 oc set env deployment/bamoe-canvas \
 KIE_SANDBOX_EXTENDED_SERVICES_URL=$EXT_URL \
 KIE_SANDBOX_CORS_PROXY_URL=$CORS_URL
+
+# 5. Expose the deployment to create a Service
+oc expose deployment bamoe-canvas --port=8080
+
+# 6. Create an external route
+oc create route edge --service=bamoe-canvas
+
+# 7. Verify deployment
+oc get deployments
+
+# 8. Verify pods
+oc get pods
+
+# 9. Verify services
+oc get svc
+
+# 10. Verify routes
+oc get routes
