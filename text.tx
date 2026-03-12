@@ -30,3 +30,78 @@ oc get svc
 
 # 10. Verify routes
 oc get routes
+
+
+
+
+
+
+
+
+# --------------------------------------------------
+# 1. Switch to BAMOE namespace
+# --------------------------------------------------
+oc project bamoe-canvas
+
+# --------------------------------------------------
+# 2. Delete existing resources
+# --------------------------------------------------
+oc delete route bamoe-canvas
+oc delete route bamoe-cors-proxy
+oc delete route bamoe-extended-services
+
+oc delete svc bamoe-canvas
+oc delete svc bamoe-cors-proxy
+oc delete svc bamoe-extended-services
+
+oc delete deployment bamoe-canvas
+oc delete deployment bamoe-cors-proxy
+oc delete deployment bamoe-extended-services
+
+# --------------------------------------------------
+# 3. Recreate BAMOE Extended Services
+# --------------------------------------------------
+oc create deployment bamoe-extended-services --image=quay.io/bamoe/extended-services:9.3.1-ibm-0006
+oc create service clusterip bamoe-extended-services --tcp=8080:8080
+oc create route edge --service=bamoe-extended-services
+
+# --------------------------------------------------
+# 4. Recreate BAMOE CORS Proxy
+# --------------------------------------------------
+oc create deployment bamoe-cors-proxy --image=quay.io/bamoe/cors-proxy:9.3.1-ibm-0006
+oc create service clusterip bamoe-cors-proxy --tcp=8080:8080
+oc create route edge --service=bamoe-cors-proxy
+
+# --------------------------------------------------
+# 5. Capture backend route URLs
+# --------------------------------------------------
+export EXT_URL=https://$(oc get route bamoe-extended-services -o jsonpath='{.spec.host}')
+export CORS_URL=https://$(oc get route bamoe-cors-proxy -o jsonpath='{.spec.host}')
+
+# --------------------------------------------------
+# 6. Recreate BAMOE Canvas
+# --------------------------------------------------
+oc create deployment bamoe-canvas --image=quay.io/bamoe/canvas:9.3.1-ibm-0006
+
+oc set env deployment/bamoe-canvas \
+KIE_SANDBOX_EXTENDED_SERVICES_URL=$EXT_URL \
+KIE_SANDBOX_CORS_PROXY_URL=$CORS_URL
+
+oc create service clusterip bamoe-canvas --tcp=8080:8080
+oc create route edge --service=bamoe-canvas
+
+# --------------------------------------------------
+# 7. Deploy BAMOE Management Console
+# --------------------------------------------------
+oc create deployment bamoe-management-console --image=quay.io/bamoe/management-console:9.3.1-ibm-0006
+oc create service clusterip bamoe-management-console --tcp=8080:8080
+oc create route edge --service=bamoe-management-console
+
+# --------------------------------------------------
+# 8. Verify everything
+# --------------------------------------------------
+oc get deployments
+oc get pods
+oc get svc
+oc get routes
+
