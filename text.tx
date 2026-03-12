@@ -1,5 +1,3 @@
-RUN npm ci --production \
-  --registry https://artifactory.bcbsfl.com/artifactory/api/npm/npm-libs-virtual/ \
-  --fetch-retries=5 \
-  --fetch-retry-mintimeout=20000 \
-  --fetch-retry-maxtimeout=120000
+oc set env deployment/bamoe-canvas \
+KIE_SANDBOX_EXTENDED_SERVICES_URL=$EXT_URL \
+KIE_SANDBOX_CORS_PROXY_URL=$CORS_URL
