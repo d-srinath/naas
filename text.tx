@@ -64,3 +64,8 @@ Severity 2 – Production functionality degraded
 (or)
 Severity 3 – Installation issue depending on environment impact.
 If you'd like, I can also give you a much stronger “Support Engineer friendly” version of this case that usually gets faster responses from Red Hat (because it includes the exact diagnostic bundle they ask for).
+
+
+
+
+We are currently unable to complete the registration of a secured cluster with RHACS Central due to connectivity issues between the Sensor and Central. As a result, the secured cluster components such as the admission controller and collector are not fully functional. This prevents us from enabling security monitoring and policy enforcement for workloads in this cluster, which impacts our ability to maintain expected security visibility and compliance.
