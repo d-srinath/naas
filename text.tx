@@ -1,28 +1,54 @@
-Got it — you want to raise a clear, professional Red Hat support case about upgrading ACS (Advanced Cluster Security) without downtime and handling version mismatch. I’ll give you a ready-to-use ticket + what details you should attach.
-✅ Red Hat Support Case (Ready to Submit)
-Title:
-ACS Central on 4.7 - Guidance Required to Upgrade to Support Secured Cluster 4.10 Without Downtime
+Request for Guidance, Documentation, and Working Session for BAMOE Usage on OpenShift
 Description:
-Hi Team,
-We are currently working on onboarding multiple OpenShift clusters into Red Hat Advanced Cluster Security (ACS).
-Our current setup:
-ACS Central is deployed using operator version 4.7
-We are trying to import a secured cluster running ACS operator version 4.10
-There is a version mismatch between Central and Secured Cluster components
-We also already have multiple clusters successfully connected to the existing Central instance.
-Issues / Concerns:
-We understand that ACS components should be on compatible versions, and Central should typically be at the same or higher version than Secured Clusters.
-We want to upgrade ACS Central from 4.7 to a supported version (e.g., 4.10 or later).
-We need guidance on performing this upgrade:
-Without downtime (or minimal downtime)
-Without impacting already connected secured clusters
-We also want to understand:
-Whether existing secured clusters require upgrades after Central upgrade
-If there is any recommended upgrade sequence (Central → Secured Clusters or vice versa)
-Questions:
-What is the recommended upgrade path from ACS 4.7 → 4.10 (or latest)?
-Can this upgrade be performed without downtime for Central and connected clusters?
-Will existing secured clusters continue to function during the Central upgrade?
-Are there any pre-checks or prerequisites we should validate before upgrading?
-After upgrading Central, do we need to manually upgrade all secured cluster services?
-Is there any impact on policies, integrations, or sensors during upgrade?
+Hi IBM Support Team,
+
+We are currently setting up IBM BAMOE (Business Automation Manager Open Editions) on OpenShift.
+
+We have successfully followed the available IBM documentation and:
+
+Deployed the BAMOE instance on OpenShift
+Created and exposed the required routes
+Accessed the BAMOE UI components successfully
+Current Challenge:
+While the deployment and access are working as expected, our team is new to BAMOE, and we are facing challenges in understanding how to proceed with actual usage.
+
+Specifically, we need help with:
+
+Creating and managing business applications (e.g., patient-related use cases)
+Understanding how to design and use data models / tables (e.g., patient tables)
+End-to-end workflow of developing and deploying applications within BAMOE
+Best practices for using BAMOE in OpenShift environments
+Request:
+We kindly request:
+
+Detailed documentation or learning resources
+Step-by-step guides for beginners
+Any official tutorials or sample use cases
+Videos or training materials for BAMOE usage
+Guidance on specific use case implementation
+Example: Creating and managing “patient” data tables and workflows
+A working session with IBM experts
+A short session to walk us through:
+Application creation
+Data modeling
+Deployment flow
+This will help us align correctly and avoid implementation issues
+Environment Details:
+Platform: OpenShift
+BAMOE Deployment: Operator / YAML-based (update as applicable)
+Access: UI and routes are successfully working
+Documentation followed: IBM official BAMOE setup guide
+Expectation:
+We are looking for guided support to move from setup → actual usage, including real-world examples and best practices.
+
+✅ Optional (Add if needed)
+If they ask later, be ready with:
+Namespace details
+BAMOE version
+Screenshots of UI
+YAML files used
+🔥 Quick 2-Line Version (If needed in chat/ticket summary)
+We have successfully deployed BAMOE on OpenShift and can access all UIs. However, as new users, we need guidance on application development (e.g., patient data modeling) and request documentation, tutorials, and a working session with IBM.
+If you want next:
+👉 I can teach you BAMOE basics (patient table, workflows) in simple terms so you don’t depend fully on IBM
+👉 Or give you demo steps to create your first BAMOE application (step-by-step)
