@@ -1,54 +1,40 @@
-Request for Guidance, Documentation, and Working Session for BAMOE Usage on OpenShift
-Description:
-Hi IBM Support Team,
+<mxfile host="app.diagrams.net" modified="2024-05-20T00:00:00.000Z" agent="Gemini" version="24.4.0">
+  <diagram id="ROSA-HCP-Layout" name="Page-1">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <mxCell id="RH_VPC" value="Managed by Red Hat VPC" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="400" height="380" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="HCP_BOX" value="Hosted Control Plane" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;verticalAlign=top;" vertex="1" parent="RH_VPC">
+          <mxGeometry x="20" y="40" width="360" height="200" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="CUST_VPC" value="Customer AWS VPC" style="swimlane;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="520" y="240" width="520" height="540" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="PL_LINK" value="PrivateLink" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6a00ff;fontColor=#ffffff;strokeColor=#3700CC;" vertex="1" parent="1">
+          <mxGeometry x="410" y="450" width="100" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="ZONE_A" value="Zone A" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="CUST_VPC">
+          <mxGeometry x="20" y="320" width="140" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ZONE_B" value="Zone B" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="CUST_VPC">
+          <mxGeometry x="190" y="320" width="140" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ZONE_C" value="Zone C" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="CUST_VPC">
+          <mxGeometry x="360" y="320" width="140" height="120" as="geometry" />
+        </mxCell>
 
-We are currently setting up IBM BAMOE (Business Automation Manager Open Editions) on OpenShift.
-
-We have successfully followed the available IBM documentation and:
-
-Deployed the BAMOE instance on OpenShift
-Created and exposed the required routes
-Accessed the BAMOE UI components successfully
-Current Challenge:
-While the deployment and access are working as expected, our team is new to BAMOE, and we are facing challenges in understanding how to proceed with actual usage.
-
-Specifically, we need help with:
-
-Creating and managing business applications (e.g., patient-related use cases)
-Understanding how to design and use data models / tables (e.g., patient tables)
-End-to-end workflow of developing and deploying applications within BAMOE
-Best practices for using BAMOE in OpenShift environments
-Request:
-We kindly request:
-
-Detailed documentation or learning resources
-Step-by-step guides for beginners
-Any official tutorials or sample use cases
-Videos or training materials for BAMOE usage
-Guidance on specific use case implementation
-Example: Creating and managing “patient” data tables and workflows
-A working session with IBM experts
-A short session to walk us through:
-Application creation
-Data modeling
-Deployment flow
-This will help us align correctly and avoid implementation issues
-Environment Details:
-Platform: OpenShift
-BAMOE Deployment: Operator / YAML-based (update as applicable)
-Access: UI and routes are successfully working
-Documentation followed: IBM official BAMOE setup guide
-Expectation:
-We are looking for guided support to move from setup → actual usage, including real-world examples and best practices.
-
-✅ Optional (Add if needed)
-If they ask later, be ready with:
-Namespace details
-BAMOE version
-Screenshots of UI
-YAML files used
-🔥 Quick 2-Line Version (If needed in chat/ticket summary)
-We have successfully deployed BAMOE on OpenShift and can access all UIs. However, as new users, we need guidance on application development (e.g., patient data modeling) and request documentation, tutorials, and a working session with IBM.
-If you want next:
-👉 I can teach you BAMOE basics (patient table, workflows) in simple terms so you don’t depend fully on IBM
-👉 Or give you demo steps to create your first BAMOE application (step-by-step)
+        <mxCell id="CONN_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="RH_VPC" target="PL_LINK">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
