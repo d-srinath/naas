@@ -1,2 +1,3 @@
 curl -L -o roxctl https://mirror.openshift.com/pub/rhacs/assets/latest/bin/Linux/roxctl
 chmod +x roxctl
+./roxctl central login --endpoint <your-central-route>:443 --insecure-skip-tls-verify
