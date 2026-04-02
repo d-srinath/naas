@@ -1,2 +1,2 @@
-Thanks for sharing the logs. The response clearly shows a “Firewall Authentication” HTML page, which confirms the request is being intercepted by the corporate proxy and not reaching Google API. We have verified from the pod that proxy connectivity and credentials are working (curl succeeds), so this is not an infrastructure issue.
-From the logs, although proxy values are present, Axios is still not successfully authenticating through the proxy. Please update the Node.js application to explicitly use the proxy with authentication (e.g., using https-proxy-agent or proper Axios proxy configuration) and ensure the credentials from HTTPS_PROXY are being applied in the request. After updating, redeploy the application and retest.
+curl -L -o roxctl https://mirror.openshift.com/pub/rhacs/assets/latest/bin/Linux/roxctl
+chmod +x roxctl
