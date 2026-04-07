@@ -1,1 +1,37 @@
-We have completed the RHACS upgrade in our sandbox environment and everything is working as expected. We understand that the upgrade preserves existing vulnerability and scan data without any loss. However, we want to confirm if it is necessary to compare vulnerability reports before and after the upgrade (for example, from 4.7 to 4.10). Our understanding is that any differences would be due to updated CVE data or scanner improvements, not due to upgrade issues. Could you please confirm if report comparison is recommended or optional as a validation step?
+We are planning to upgrade RHACS in the production environment from version 4.7 to 4.10. The upgrade will be performed sequentially for Central (4.7 → 4.8 → 4.9 → 4.10) using the operator. After Central is successfully upgraded and validated, we will proceed with upgrading all secured clusters to match version 4.10.
+Total secured clusters: 6 (to be upgraded post Central upgrade).
+This activity ensures we are on the supported version with latest security fixes and improvements.
+
+
+
+Install Plan
+Central Upgrade
+Update subscription channel sequentially (4.7 → 4.8 → 4.9 → 4.10) and approve InstallPlans.
+Monitor pods:
+oc get pods -n stackrox
+Verify Central UI access and health after each upgrade.
+Ensure DB space and backup are in place before starting.
+Secured Clusters Upgrade
+Enable auto-upgrade or trigger upgrade from Central UI.
+Verify sensor/collector pods:
+oc get pods -n stackrox
+Ensure all secured clusters reach Healthy state.
+Confirm version sync with Central (4.10).
+
+
+
+Test Plan
+Verify all pods are running:
+oc get pods -n stackrox
+Login to Central UI and confirm access.
+Check secured clusters status → Healthy.
+Validate vulnerability scanning and reports are accessible.
+
+
+
+Backout Plan
+If upgrade fails, revert operator channel to previous version (e.g., 4.10 → 4.9).
+Restore Central using database backup if required.
+Verify pods and cluster connectivity after rollback:
+oc get pods -n stackrox
+Reconfirm Central UI and secured cluster health.
