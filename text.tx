@@ -1,1 +1,7 @@
-RHACS Central is a critical component used by our organization to monitor security across all clusters. It is used daily to generate vulnerability and compliance reports for deployed images and workloads. The security team relies on these reports to identify and communicate risks to application teams. Any disruption during the upgrade may impact visibility into vulnerabilities and delay remediation efforts. Therefore, maintaining availability and data integrity during this upgrade is important for our security operations.
+curl -L -o roxctl https://mirror.openshift.com/pub/rhacs/assets/latest/bin/Linux/roxctl
+chmod +x roxctl
+
+./roxctl central login --endpoint central-stackrox.apps.ose-nsm-prod.gwnsm.guidewell.net:443 --insecure-skip-tls-verify
+
+
+./roxctl central backup
