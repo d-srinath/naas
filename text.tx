@@ -1,3 +1,9 @@
-oc run test-net -n stackrox --rm -it --image=registry.access.redhat.com/ubi9/ubi-minimal -- sh
+oc run test-node \
+  -n stackrox \
+  --rm -it \
+  --overrides='{"spec":{"nodeName":"edcxoscd0041.ose-cpa-dev.bcbsfl.com"}}' \
+  --image=registry.access.redhat.com/ubi9/ubi-minimal \
+  -- sh
+
 
 curl -vk https://central-stackrox.apps.ose-nsm-prod.gwnsm.guidewell.net/v1/ping
