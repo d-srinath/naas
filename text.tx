@@ -1,9 +1,1 @@
-oc run test-node \
-  -n stackrox \
-  --rm -it \
-  --overrides='{"spec":{"nodeName":"edcxoscd0041.ose-cpa-dev.bcbsfl.com"}}' \
-  --image=registry.access.redhat.com/ubi9/ubi-minimal \
-  -- sh
-
-
-curl -vk https://central-stackrox.apps.ose-nsm-prod.gwnsm.guidewell.net/v1/ping
+RHACS Central is a critical component used by our organization to monitor security across all clusters. It is used daily to generate vulnerability and compliance reports for deployed images and workloads. The security team relies on these reports to identify and communicate risks to application teams. Any disruption during the upgrade may impact visibility into vulnerabilities and delay remediation efforts. Therefore, maintaining availability and data integrity during this upgrade is important for our security operations.
