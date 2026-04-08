@@ -5,3 +5,9 @@ chmod +x roxctl
 
 
 ./roxctl central backup
+
+
+roxctl central login --endpoint central-stackrox.apps.ose-nsm-prod.gwnsm.guidewell.net:443 --insecure-skip-tls-verify
+roxctl central backup
+roxctl central backup --output central-backup.zip
+oc -n stackrox get secret central-htpasswd -o go-template='{{index .data "password" | base64decode}}'
