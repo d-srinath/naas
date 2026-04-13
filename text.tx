@@ -1,52 +1,5 @@
-✅ 1. Support & Stability (MOST IMPORTANT)
-4.7 is deprecated / unsupported
-4.10 is actively supported by Red Hat
-👉 Why important:
-Security patches
-Bug fixes
-Vendor support
-✅ 2. Better Vulnerability Detection (CVEs)
-👉 CVEs = Common Vulnerabilities and Exposures (security issues)
-New version has updated vulnerability database
-Detects more and latest security issues
-👉 Meaning:
-Same image → more accurate results in 4.10
-✅ 3. Improved Scanner (Accuracy + Speed)
-Better image scanning engine
-Faster scans
-Fewer false positives
-👉 Benefit:
-More reliable security reports
-✅ 4. Kubernetes / OpenShift Compatibility
-4.10 supports newer OpenShift/K8s versions
-4.7 may break in future upgrades
-👉 Benefit:
-Future-proof platform
-✅ 5. Database Upgrade (Postgres 13 → 15)
-Better performance
-Faster queries
-Improved reliability
-👉 Benefit:
-Faster UI, reports, queries
-✅ 6. New Features (High-level)
-Delegated scanning improvements
-Better policy management
-Improved UI & usability
-Better cluster health visibility
-✅ 7. Security Enhancements
-Stronger TLS/security defaults
-Better RBAC and access control
-⚡ One-Line Impact Statement (VERY IMPORTANT)
-👉 If manager asks impact:
-This upgrade improves security visibility, ensures platform supportability, and provides more accurate vulnerability detection across all clusters.
-🎤 If they ask “Why now?”
-Because 4.7 is nearing end of support, and upgrading now avoids future risks, ensures compliance, and keeps our security platform up to date.
-🧠 Your Internal Understanding (VERY IMPORTANT)
-👉 Upgrade is NOT just version change
-It improves:
-Detection (CVEs)
-Performance
-Stability
-Compatibility
-✅ Short version (if they want quick answer)
-We are upgrading to stay on a supported version, improve vulnerability detection, enhance performance, and ensure compatibility with newer OpenShift environments.
+Hello Team,
+
+This weekend, I completed the RHACS Central operator upgrade in production and also upgraded the secured cluster operator in two DEV clusters. Since the Central instance is used for daily vulnerability reporting, please generate the usual reports and verify that the expected data is still available. If you notice any difference in report results, missing data, or unexpected behavior after the upgrade, please let us know. This will help us confirm that everything is working as expected after the changes.
+
+Thank you.
