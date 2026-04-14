@@ -1,5 +1,5 @@
-Delayed image scanning is causing outdated vulnerability data in the dev cluster.
-This may result in security risks not being identified in a timely manner.
-Development teams may proceed with deployments without latest vulnerability insights.
-It impacts compliance and security posture visibility across environments.
-If prolonged, this could lead to potential exposure to unpatched vulnerabilities.
+Thanks for the update. From OpenShift/platform side, everything looks good — proxy configuration and connectivity are working as expected.
+
+Since the request is being blocked by corporate policy, this is not an OpenShift issue. The Google API endpoint needs to be whitelisted by the security/network team for outbound access.
+
+No additional changes are required from the OpenShift side at this point
