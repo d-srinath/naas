@@ -1,5 +1,41 @@
-Hello Team,
 
-This weekend, I completed the RHACS Central operator upgrade in production and also upgraded the secured cluster operator in two DEV clusters. Since the Central instance is used for daily vulnerability reporting, please generate the usual reports and verify that the expected data is still available. If you notice any difference in report results, missing data, or unexpected behavior after the upgrade, please let us know. This will help us confirm that everything is working as expected after the changes.
+⸻
 
-Thank you.
+🎫 Ticket Title
+
+Delayed Image Scanning in RHACS After Operator Upgrade – Dev Cluster Showing Significant Scan Lag
+
+⸻
+
+📝 Ticket Description
+
+Hi Team,
+
+We are observing delayed image scanning behavior in our environment after performing a recent upgrade of Red Hat Advanced Cluster Security (RHACS).
+
+Issue Details:
+	•	The dev cluster contains a significantly higher number of deployments (~5370) compared to prod (~1603).
+	•	Post-upgrade, many images in the dev cluster have not been scanned within the expected timeframe (typically a few hours), with several exceeding 12–24 hours.
+	•	In contrast, the prod cluster (not recently upgraded) shows normal scan activity with up-to-date scan times.
+
+Environment Details:
+	•	Total secured clusters: ~7
+	•	Dev cluster has multiple stages (e.g., unit test, dev), contributing to higher image volume.
+	•	Scanner components (scanner-v4-indexer, scanner-db, central) are running and healthy.
+	•	Logs indicate scanning activity is ongoing, but scan throughput appears slower than expected.
+
+Observations:
+	•	Sorting images by scan time shows a large portion of images in dev exceeding 12 hours since last scan.
+	•	No explicit scan queue or backlog metrics visible in UI.
+	•	This behavior started after the operator upgrade.
+
+Questions / Clarification Needed:
+	1.	Is it expected behavior for RHACS to take 24–48 hours to re-scan images across all secured clusters after an upgrade?
+	2.	Does RHACS re-index or re-scan all images post-upgrade, potentially causing backlog?
+	3.	Are there recommended configurations (e.g., scaling scanner components) to improve scan throughput in high-volume environments?
+	4.	Is there a way to monitor scan backlog or queue more explicitly?
+
+Request:
+Kindly confirm whether this behavior is expected and advise if any tuning or configuration changes are required to improve scan performance.
+
+⸻
