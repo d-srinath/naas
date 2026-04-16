@@ -1,4 +1,8 @@
-Increase stackrox namespace storage quota to unblock RHACS Central upgrade
+Install Plan:
+Increase the storage/resource quota for the stackrox namespace as approved in the change. Monitor the RHACS operator reconciliation and confirm that the central-db-backup PVC is created successfully. Verify that Central and related components proceed with the upgrade.
 
-Description:
-During the RHACS upgrade, the Central custom resource is unable to create the central-db-backup PVC because the current stackrox namespace storage quota is exceeded. As a result, the upgrade is stuck in a partial state, with some components still showing version 4.7.x. Based on Red Hat guidance, increasing the namespace storage/resource quota is the required next step to allow the operator to continue reconciliation and complete the Central database migration and upgrade successfully.
+Test Plan:
+Check that the central-db-backup PVC is created without quota errors. Verify the Central CR no longer shows the reconcile error and confirm Central and other RHACS components move to the expected upgraded version. Validate RHACS UI health and basic scanning functionality.
+
+Backout Plan:
+If the change causes any issue, revert the stackrox namespace quota to the previous value if needed. Since this change only increases quota, no application rollback is expected. Continue working with Red Hat for further recovery steps if the upgrade does not proceed as expected.
