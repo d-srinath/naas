@@ -1,29 +1,13 @@
-We need immediate assistance on this issue in production.
+Upon further investigation, I found that the Central upgrade is blocked because it is unable to create the central-db-backup PVC due to storage quota limits in the stackrox namespace.
 
-We upgraded the RHACS / ACS operator in OpenShift, and under Installed Operators it shows Advanced Cluster Security for Kubernetes version 4.10.1 as succeeded and up to date. However, the actual Central component still appears to be on version 4.7.3.
+The error in the Central CR indicates that the new backup PVC request is being denied because the namespace quota is exceeded.
 
-What we are seeing:
-	•	In the RHACS UI under Platform Configuration > Clusters, when hovering over the local/central cluster, it shows:
-	•	Sensor version: 4.10.1
-	•	Central version: 4.7.3
-	•	In OpenShift, the Installed Operator shows 4.10.1 successfully installed.
-	•	But when checking the Central deployment details, deployment template labels/specs, and related metadata in the stackrox namespace, the Central resources still show 4.7.3 / Helm chart 4.7.3.
-	•	This suggests the operator upgrade completed, but the Central component itself did not reconcile/roll forward to 4.10.1.
+Could you please confirm the recommended and supported approach for this situation in production?
 
-This is a production environment, so we have not manually changed or forced the Central deployment. We want to avoid any unsafe action without Red Hat guidance.
+Specifically:
+	•	Is increasing the stackrox namespace storage quota the correct next step?
+	•	After increasing the quota, will the operator automatically resume and complete the Central upgrade from 4.7.3 to 4.10.1?
+	•	If not, what exact post-quota actions should we take to successfully complete the upgrade?
+	•	Are there any additional validation or recovery steps you recommend after quota is increased?
 
-Impact:
-	•	We appear to be in a partial upgrade state.
-	•	Secured cluster components/sensor show 4.10.1, but Central still reports 4.7.3.
-	•	We need to understand whether this is a known issue, a failed reconciliation, or a required post-upgrade action.
-
-We already generated and shared the diagnostic bundle earlier, but the issue still remains.
-
-Please help us urgently with:
-	1.	Why Central is still showing/running 4.7.3 while the operator and sensor show 4.10.1
-	2.	What exact validation steps we should run next
-	3.	The safest supported remediation for production to bring Central to 4.10.1
-	4.	Whether this is a known bug or incomplete operator reconciliation issue
-
-Please treat this as urgent since this is affecting our production RHACS upgrade and we need immediate guidance.
-:::
+Please advise on the safest supported steps to complete the Central upgrade successfully.
