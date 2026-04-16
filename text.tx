@@ -1,13 +1,1 @@
-Upon further investigation, I found that the Central upgrade is blocked because it is unable to create the central-db-backup PVC due to storage quota limits in the stackrox namespace.
-
-The error in the Central CR indicates that the new backup PVC request is being denied because the namespace quota is exceeded.
-
-Could you please confirm the recommended and supported approach for this situation in production?
-
-Specifically:
-	•	Is increasing the stackrox namespace storage quota the correct next step?
-	•	After increasing the quota, will the operator automatically resume and complete the Central upgrade from 4.7.3 to 4.10.1?
-	•	If not, what exact post-quota actions should we take to successfully complete the upgrade?
-	•	Are there any additional validation or recovery steps you recommend after quota is increased?
-
-Please advise on the safest supported steps to complete the Central upgrade successfully.
+Yesterday, the RHACS upgrade initially looked successful because the operator subscription moved to 4.10.1, the operator showed healthy, and there was no immediate outage. After deeper validation today, I found the upgrade is actually only partially complete: Sensor and Admission Controller moved to 4.10.x, but Central, Central DB, and scanner-related components are still on 4.7.3. I checked the Central custom resource and found the upgrade is blocked because RHACS is trying to create a central-db-backup PVC, but that request is failing due to storage quota limits in the stackrox namespace. My earlier storage check inside the existing Central volume was valid for current disk usage, but this issue is different because it involves quota for creating an additional backup PVC during reconciliation. I have already reopened the Red Hat support case with these findings. Tomorrow morning, I’ll continue this as first priority, work with Red Hat on the supported remediation, and validate the next steps needed to complete the Central upgrade safely in production.
