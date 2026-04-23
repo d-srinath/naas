@@ -1,8 +1,5 @@
-Install Plan:
-Increase the storage/resource quota for the stackrox namespace as approved in the change. Monitor the RHACS operator reconciliation and confirm that the central-db-backup PVC is created successfully. Verify that Central and related components proceed with the upgrade.
+The issue is related to ACS vulnerability deferral behavior. We have configured deferrals to suppress certain (unused/accepted) CVEs so they should not appear in reports, but the reports are still showing those vulnerabilities even after deferral is applied. We verified the deferral settings and configurations, and the behavior persists even after upgrading to version 4.10. This is causing confusion in reporting and making it difficult to rely on the filtered results. A support ticket has been raised to investigate why deferred CVEs are not being excluded as expected.
 
-Test Plan:
-Check that the central-db-backup PVC is created without quota errors. Verify the Central CR no longer shows the reconcile error and confirm Central and other RHACS components move to the expected upgraded version. Validate RHACS UI health and basic scanning functionality.
 
-Backout Plan:
-If the change causes any issue, revert the stackrox namespace quota to the previous value if needed. Since this change only increases quota, no application rollback is expected. Continue working with Red Hat for further recovery steps if the upgrade does not proceed as expected.
+
+I checked the deployment and all pods are using the same image tag. The imagePullPolicy is IfNotPresent. One pod is running and another pod on the same node is failing with ImagePullBackOff, and the pod creation times are only a few minutes apart. I am trying to understand whether this points more to a transient registry pull failure, a missing/changed tag in Quay, or something node/runtime related. What is the usual approach we take here? Do we first confirm the exact error from oc describe pod, and if the tag is missing in Quay, hand it back to the release/app team to restore or redeploy with a valid tag?
