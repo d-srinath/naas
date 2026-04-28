@@ -1,5 +1,5 @@
-The issue is related to ACS vulnerability deferral behavior. We have configured deferrals to suppress certain (unused/accepted) CVEs so they should not appear in reports, but the reports are still showing those vulnerabilities even after deferral is applied. We verified the deferral settings and configurations, and the behavior persists even after upgrading to version 4.10. This is causing confusion in reporting and making it difficult to rely on the filtered results. A support ticket has been raised to investigate why deferred CVEs are not being excluded as expected.
-
-
-
-I checked the deployment and all pods are using the same image tag. The imagePullPolicy is IfNotPresent. One pod is running and another pod on the same node is failing with ImagePullBackOff, and the pod creation times are only a few minutes apart. I am trying to understand whether this points more to a transient registry pull failure, a missing/changed tag in Quay, or something node/runtime related. What is the usual approach we take here? Do we first confirm the exact error from oc describe pod, and if the tag is missing in Quay, hand it back to the release/app team to restore or redeploy with a valid tag?
+oc delete pod admission-control-68d7bd4b55-zqb44 -n stackrox --grace-period=0 --force
+oc delete pod collector-54ztd -n stackrox --grace-period=0 --force
+oc delete pod scanner-6c4fcf666b-bbtfx -n stackrox --grace-period=0 --force
+oc delete pod scanner-db-59d855cff5-xx2sz -n stackrox --grace-period=0 --force
+oc delete pod sensor-678794bf4b-6vmzr -n stackrox --grace-period=0 --force
