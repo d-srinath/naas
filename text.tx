@@ -1,5 +1,16 @@
-oc delete pod admission-control-68d7bd4b55-zqb44 -n stackrox --grace-period=0 --force
-oc delete pod collector-54ztd -n stackrox --grace-period=0 --force
-oc delete pod scanner-6c4fcf666b-bbtfx -n stackrox --grace-period=0 --force
-oc delete pod scanner-db-59d855cff5-xx2sz -n stackrox --grace-period=0 --force
-oc delete pod sensor-678794bf4b-6vmzr -n stackrox --grace-period=0 --force
+oc project bamoe-canvas
+
+oc set image deployment/bamoe-extended-services bamoe-extended-services=quay.io/bamoe/extended-services:9.4.1-ibm-0002
+
+oc set image deployment/bamoe-cors-proxy bamoe-cors-proxy=quay.io/bamoe/cors-proxy:9.4.1-ibm-0002
+
+oc set image deployment/bamoe-canvas bamoe-canvas=quay.io/bamoe/canvas:9.4.1-ibm-0002
+
+oc set env deployment/bamoe-extended-services QUARKUS_HTTP_PORT=8080
+
+oc rollout status deployment/bamoe-extended-services
+oc rollout status deployment/bamoe-cors-proxy
+oc rollout status deployment/bamoe-canvas
+
+oc get pods
+oc get routes
