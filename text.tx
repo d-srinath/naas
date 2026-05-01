@@ -14,3 +14,27 @@ oc rollout status deployment/bamoe-canvas
 
 oc get pods
 oc get routes
+
+
+
+oc project bamoe-dev
+
+oc set image deployment/bamoe-maven-repo bamoe-maven-repo=quay.io/bamoe/maven-repository:9.4.1-ibm-0002
+
+oc rollout status deployment/bamoe-maven-repo
+
+oc get pods
+oc get routes
+
+
+
+oc project <management-console-namespace>
+
+oc set image deployment/bamoe-management-console bamoe-management-console=quay.io/bamoe/management-console:9.4.1-ibm-0002
+
+oc set env deployment/bamoe-management-console QUARKUS_HTTP_PORT=8080
+
+oc rollout status deployment/bamoe-management-console
+
+oc get pods
+oc get routes
