@@ -1,8 +1,10 @@
 oc project bamoe-dev
 
-oc set env deployment/bamoe-management-console PORT=8080
+oc patch deployment bamoe-management-console -p '{"spec":{"template":{"spec":{"enableServiceLinks":false}}}}'
 
-oc set env deployment/bamoe-management-console HTTPD_PORT=8080
+oc set env deployment/bamoe-management-console PORT-
+
+oc set env deployment/bamoe-management-console HTTPD_PORT-
 
 oc rollout restart deployment/bamoe-management-console
 
