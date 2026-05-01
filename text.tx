@@ -1,8 +1,8 @@
 oc project bamoe-dev
 
-oc set env deployment/bamoe-management-console QUARKUS_HTTP_PORT-
-
 oc set env deployment/bamoe-management-console PORT=8080
+
+oc set env deployment/bamoe-management-console HTTPD_PORT=8080
 
 oc rollout restart deployment/bamoe-management-console
 
