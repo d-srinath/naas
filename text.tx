@@ -1,7 +1,1 @@
-It seems the build agent is unable to connect to:
-
-https://registry.npmjs.org/semver
-
-The error npm ERR! code ECONNRESET usually indicates a network connectivity or proxy issue from the Jenkins agent/build pod. Since this is happening across multiple projects, this does not look like an application-specific issue.
-
-Could the Jenkins team please check the agent connectivity and proxy configuration to confirm why the agent is unable to reach the npm registry?
+During the ACS upgrade, I did not specifically look into the vulnerability data sources being used by Scanner V4. We mainly focused on upgrading Central and secured cluster components and validating the Scanner V4 pods. I can check the Scanner V4 / Scanner V4 DB configuration, logs, and ACS documentation to see what vulnerability feeds or sources are being used. I’ll dig more into it and share the details once I confirm.
