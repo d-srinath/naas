@@ -1,1 +1,5 @@
-During the ACS upgrade, I did not specifically look into the vulnerability data sources being used by Scanner V4. We mainly focused on upgrading Central and secured cluster components and validating the Scanner V4 pods. I can check the Scanner V4 / Scanner V4 DB configuration, logs, and ACS documentation to see what vulnerability feeds or sources are being used. I’ll dig more into it and share the details once I confirm.
+We faced the same issue earlier when calling Google Address Validation API directly from our service. The request was getting blocked by corporate proxy/security policies, even after configuring proxy in the application.
+
+The working approach we adopted was to avoid calling Google API directly and instead use the existing wrapper service via Provider Connect, which already handles Trillium + Google calls and required authentication.
+
+This removed the need for additional proxy handling and whitelisting from our side, and resolved the issue.
