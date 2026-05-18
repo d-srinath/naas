@@ -1,11 +1,23 @@
-apiVersion: v1
-kind: Pod
-metadata:
-  name: net-debug
-  namespace: stackrox
-spec:
-  containers:
-  - name: net-debug
-    image: curlimages/curl:8.10.1
-    command: ["sleep", "3600"]
-  restartPolicy: Never
+Subject: RHACS secured cluster installation failing - Sensor cannot connect to Central
+
+Hello Red Hat Team,
+
+We are seeing an issue while creating a secured cluster by using the RHACS Operator. The same installation steps work successfully on another cluster, but on this specific dev cluster the secured cluster does not complete registration with Central.
+
+What we observed:
+- The init bundle / bootstrap secrets were created successfully in the stackrox namespace.
+- Sensor pod starts, but logs repeatedly show failure connecting to Central:
+  dial tcp 172.26.21.91:443: connect: connection refused
+- From a debug pod inside the failing cluster, curl -vk https://central-stackrox.apps.ose-nsm-prod.gwnsm.guidewell.net:443/v1/ping fails with connection refused.
+- From a debug pod in a working stage cluster, the same curl succeeds and returns HTTP 200.
+- Because Sensor cannot complete communication with Central, downstream TLS secrets for scanner/admission-control components are not created, and those pods remain not ready.
+
+Our finding:
+This appears to be cluster-specific connectivity from the failing secured cluster to the Central route on port 443, rather than a general Central or RHACS configuration issue.
+
+Attached:
+- RHACS diagnostic bundle
+- OpenShift must-gather from the failing cluster
+- screenshots of Sensor logs and curl test results from working and failing clusters
+
+Please help review and confirm whether there is any RHACS-specific requirement we are missing, or whether this is purely a cluster/network connectivity issue.
