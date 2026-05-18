@@ -1,7 +1,11 @@
-Going forward, my manager would like me to be more involved in infrastructure-related activities and work closely with you, Bob, and Ryan on the infrastructure side.
-
-If there are any ongoing or upcoming infrastructure tasks that need support, I’d appreciate it if you could involve me. Also, please include me in any relevant infrastructure meetings, production activities, patching work, or discussions where I can learn and contribute.
-
-Additionally, I would be interested in scheduling regular knowledge transfer sessions or short sync-up calls on a daily or weekly basis whenever possible, to help me ramp up on the infrastructure side.
-
-Thank you very much for your support and guidance.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: net-debug
+  namespace: stackrox
+spec:
+  containers:
+  - name: net-debug
+    image: curlimages/curl:8.10.1
+    command: ["sleep", "3600"]
+  restartPolicy: Never
