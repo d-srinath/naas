@@ -1,23 +1,20 @@
-Subject: RHACS secured cluster installation failing - Sensor cannot connect to Central
+Hello [Name],
 
-Hello Red Hat Team,
+I hope you are doing well.
 
-We are seeing an issue while creating a secured cluster by using the RHACS Operator. The same installation steps work successfully on another cluster, but on this specific dev cluster the secured cluster does not complete registration with Central.
+I am reaching out to follow up on a long-standing issue we have been facing with Red Hat ACS regarding deferred CVEs still appearing in vulnerability reports. This case was originally raised on July 2, 2025, and since then we have been working through this with Red Hat support for nearly a year.
 
-What we observed:
-- The init bundle / bootstrap secrets were created successfully in the stackrox namespace.
-- Sensor pod starts, but logs repeatedly show failure connecting to Central:
-  dial tcp 172.26.21.91:443: connect: connection refused
-- From a debug pod inside the failing cluster, curl -vk https://central-stackrox.apps.ose-nsm-prod.gwnsm.guidewell.net:443/v1/ping fails with connection refused.
-- From a debug pod in a working stage cluster, the same curl succeeds and returns HTTP 200.
-- Because Sensor cannot complete communication with Central, downstream TLS secrets for scanner/admission-control components are not created, and those pods remain not ready.
+Our main concern is that this issue continues to remain unresolved even after multiple version cycles. Earlier, we were given the understanding that this would be addressed in versions 4.9 or 4.10, but we are now on 4.10 and the problem still persists. Most recently, we were informed that the fix is now expected in 4.11. From a business standpoint, this prolonged delay is becoming very difficult for us to manage.
 
-Our finding:
-This appears to be cluster-specific connectivity from the failing secured cluster to the Central route on port 443, rather than a general Central or RHACS configuration issue.
+ACS is a critical platform for our organization. We rely heavily on it as the primary security hub for image vulnerability scanning before deployment. A key part of that process is the ability to defer vulnerabilities that are known, reviewed, and currently not fixable. However, even after deferring CVEs at the workload scope, they still continue to appear in the vulnerability reports. This is creating confusion for our development teams, leading to misleading reporting, and impacting trust in the platform output.
 
-Attached:
-- RHACS diagnostic bundle
-- OpenShift must-gather from the failing cluster
-- screenshots of Sensor logs and curl test results from working and failing clusters
+This issue is now affecting our operational workflow and business decisions. Our teams are spending additional time reviewing vulnerabilities that should already be excluded from reporting, and this is increasing manual effort and causing repeated confusion during deployment and security review processes. Since ACS plays such a central role in our environment, the absence of a working and reliable deferral behavior is a serious concern for us.
 
-Please help review and confirm whether there is any RHACS-specific requirement we are missing, or whether this is purely a cluster/network connectivity issue.
+Given how long this issue has remained open, we would greatly appreciate your support in helping escalate this matter internally and providing clearer visibility into the actual delivery timeline. We would also like to understand whether there is any interim workaround, guidance, or support path available until the 4.11 fix is officially released.
+
+We would appreciate any help you can provide in driving this to resolution, as this is a high-priority issue for our organization.
+
+Thank you for your support.
+
+Best regards,  
+Pavansai
