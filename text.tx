@@ -1,6 +1,8 @@
-Source IP: 10.224.17.138  
-Destination IP: 172.26.21.91  
-Destination Port: 443  
-Destination FQDN: central-stackrox.apps.ose-nsm-prod.gwnsm.guidewell.net
+Thank you for the update. This is good to hear, and we appreciate the testing and confirmation from your team.
 
-This was captured from a connectivity test run inside a debug pod in the failing apiidm-dev cluster.
+Since our organization and platform team rely heavily on this functionality, could you please confirm the expected availability timeline for ACS 4.11 for customers? We want to understand when this fix will be available for us to plan accordingly on our side.
+
+Please share any tentative release date or rollout timeline you can provide.
+
+Thank you,
+Pavansai
