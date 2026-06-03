@@ -1,10 +1,16 @@
-Hi Brian,
+Hi Team,
 
-As discussed, all required servers/resources for the new OpenShift cluster are now available. We would like to coordinate with you on the cluster build activities and also request a walkthrough/demo session during the build process.
+We are preparing a new OpenShift cluster build and need assistance with proxy configuration for the new cluster nodes.
 
-Since the team is interested in learning and following the implementation steps, we would like to invite additional team members as well. Please let us know what works best from your side — whether you prefer a single walkthrough session or multiple sessions during the build activities.
+Could you please add the following host IPs to the OpenShift proxy group so the nodes can access the required external URLs and download container images during installation and cluster operations?
 
-Once we have your availability, I can go ahead and schedule the calls and include the required team members.
+The list of node hostnames/IPs is included below.
+
+<Add server hostnames and IP addresses here>
+
+Please let us know if any additional information is needed from our side.
 
 Thank you,
-Pavan
+Sai
+
+Request to Add New OpenShift Cluster Nodes to Proxy OpenShift Group
