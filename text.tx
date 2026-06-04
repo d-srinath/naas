@@ -1,16 +1,17 @@
 Hi Team,
 
-We are preparing a new OpenShift cluster build and need assistance with proxy configuration for the new cluster nodes.
+We are preparing a new OpenShift cluster build and need assistance with creating the required DNS records.
 
-Could you please add the following host IPs to the OpenShift proxy group so the nodes can access the required external URLs and download container images during installation and cluster operations?
+Could you please create the following records within the subnet 172.18.80.x (or the appropriate cluster subnet)?
 
-The list of node hostnames/IPs is included below.
+- API record: api.<cluster-name>.<domain>
+- API internal record: api-int.<cluster-name>.<domain>
+- Wildcard apps record: *.apps.<cluster-name>.<domain>
 
-<Add server hostnames and IP addresses here>
-
-Please let us know if any additional information is needed from our side.
+Please let us know if any additional information is required.
 
 Thank you,
 Sai
 
-Request to Add New OpenShift Cluster Nodes to Proxy OpenShift Group
+
+Request for DNS Records for New OpenShift Cluster
