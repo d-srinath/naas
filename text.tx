@@ -1,17 +1,32 @@
-Hi Team,
+#!/bin/bash
 
-We are preparing a new OpenShift cluster build and need assistance with creating the required DNS records.
+hosts=(
+"edcxoscd015a.ose-edb-dev.bcbsfl.com"
+"edcxoscd015b.ose-edb-dev.bcbsfl.com"
+"edcxoscd015c.ose-edb-dev.bcbsfl.com"
+"edcxosmd015a.ose-edb-dev.bcbsfl.com"
+"edcxosmd015b.ose-edb-dev.bcbsfl.com"
+"edcxosmd015c.ose-edb-dev.bcbsfl.com"
+)
 
-Could you please create the following records within the subnet 172.18.80.x (or the appropriate cluster subnet)?
-
-- API record: api.<cluster-name>.<domain>
-- API internal record: api-int.<cluster-name>.<domain>
-- Wildcard apps record: *.apps.<cluster-name>.<domain>
-
-Please let us know if any additional information is required.
-
-Thank you,
-Sai
+for host in "${hosts[@]}"
+do
+  echo -n "$host -> "
+  nslookup "$host" 2>/dev/null | awk '/^Address: / {print $2}' | tail -1
+done
 
 
-Request for DNS Records for New OpenShift Cluster
+while read host
+do
+  echo -n "$host -> "
+  nslookup "$host" 2>/dev/null | awk '/^Address: / {print $2}' | tail -1
+done < hosts.txt
+
+
+while read host
+do
+  printf "%-50s " "$host"
+  dig +short "$host"
+done < hosts.txt
+
+
