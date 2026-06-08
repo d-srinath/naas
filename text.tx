@@ -1,32 +1,27 @@
-#!/bin/bash
+Create Remote Helm Repository in Artifactory for Flexera KRM Public ECR Helm Charts
 
-hosts=(
-"edcxoscd015a.ose-edb-dev.bcbsfl.com"
-"edcxoscd015b.ose-edb-dev.bcbsfl.com"
-"edcxoscd015c.ose-edb-dev.bcbsfl.com"
-"edcxosmd015a.ose-edb-dev.bcbsfl.com"
-"edcxosmd015b.ose-edb-dev.bcbsfl.com"
-"edcxosmd015c.ose-edb-dev.bcbsfl.com"
-)
+Description
 
-for host in "${hosts[@]}"
-do
-  echo -n "$host -> "
-  nslookup "$host" 2>/dev/null | awk '/^Address: / {print $2}' | tail -1
-done
+We need a new remote Helm repository in Artifactory that proxies the Flexera KRM Helm charts hosted in AWS Public ECR.
 
+The existing public.ecr.aws remote repository in Artifactory appears to be configured only for container images and cannot be used for Helm chart consumption.
 
-while read host
-do
-  echo -n "$host -> "
-  nslookup "$host" 2>/dev/null | awk '/^Address: / {print $2}' | tail -1
-done < hosts.txt
+Request Details
 
+* Repository Type: Remote Helm Repository
+* Upstream Source: AWS Public ECR Helm Chart Repository
+* Purpose: Consume Flexera KRM Helm charts from a corporate environment through Artifactory
+* Project/Application: Flexera Kubernetes Resource Manager (KRM)
+* Environment: Development / Test (and future Production if required)
 
-while read host
-do
-  printf "%-50s " "$host"
-  dig +short "$host"
-done < hosts.txt
+Access Requirements
 
+Please grant access to the following users/groups:
 
+Business Justification
+
+The Flexera KRM deployment requires Helm charts hosted in AWS Public ECR. Corporate environments are restricted from directly accessing external repositories, therefore Artifactory must proxy the Helm repository to allow controlled and auditable access for Flexera deployments and future upgrades.
+
+Additional Information
+
+Please advise if any additional repository configuration, authentication, or approval is required before the repository can be used by the platform engineering team.
