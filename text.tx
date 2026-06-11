@@ -1,1 +1,1 @@
-grep -R "volumeClaimTemplate\|monitor.storage\|storage:" -n /tmp/krm-chart/templates /tmp/krm-chart/values.yaml
+oc get pod <monitor-pod-name> -n flexera -o jsonpath='{.spec.containers[*].image}{"\n"}'
