@@ -13,3 +13,5 @@ oc exec -n flexera krm-flexera-instance-monitor-0 -- which msgconfig
 oc debug -n flexera pod/krm-flexera-instance-monitor-0 -- chroot /host
 oc get sts krm-flexera-instance-monitor -n flexera -o yaml | grep -A30 -B10 "image:"
 grep -R "MGSFT_RUNPOLICY\|msgconfig\|runpolicy" -n /tmp/krm-chart
+
+Flexera KRM chart 1.0.13 was successfully deployed from the internal Artifactory OCI registry. The controller pod is healthy, but the monitor pod is failing during bootstrap with a msgconfig executable not found error. Storage configuration has been validated and the KRM custom resource is being created successfully. The next step is to identify the original Flexera configuration values and Beacon settings that were previously customized under vendor guidance, as the current deployment is using placeholder/default values and may be missing required runtime configuration.
