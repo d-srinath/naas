@@ -1,1 +1,5 @@
 oc get pod <monitor-pod-name> -n flexera -o jsonpath='{.spec.containers[*].image}{"\n"}'
+
+oc describe pod krm-flexera-instance-monitor-0 -n flexera | grep -A5 -B5 -i "image"
+
+oc describe pod krm-flexera-instance-monitor-0 -n flexera | grep -A20 -i "events"
