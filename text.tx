@@ -7,3 +7,7 @@ oc describe pod krm-flexera-instance-monitor-0 -n flexera | grep -A20 -i "events
   beaconURL: "http://REAL-BEACON-URL"
 
 helm upgrade flexera oci://artifactory.bcbsfl.com/public-ecr-aws-charts-virtual/flexera/krm-chart -f /tmp/flexera-values.yaml -n flexera
+
+oc exec -n flexera krm-flexera-instance-monitor-0 -- which msgconfig
+
+oc debug -n flexera pod/krm-flexera-instance-monitor-0 -- chroot /host
