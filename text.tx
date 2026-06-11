@@ -12,3 +12,4 @@ oc exec -n flexera krm-flexera-instance-monitor-0 -- which msgconfig
 
 oc debug -n flexera pod/krm-flexera-instance-monitor-0 -- chroot /host
 oc get sts krm-flexera-instance-monitor -n flexera -o yaml | grep -A30 -B10 "image:"
+grep -R "MGSFT_RUNPOLICY\|msgconfig\|runpolicy" -n /tmp/krm-chart
