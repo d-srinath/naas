@@ -3,3 +3,7 @@ oc get pod <monitor-pod-name> -n flexera -o jsonpath='{.spec.containers[*].image
 oc describe pod krm-flexera-instance-monitor-0 -n flexera | grep -A5 -B5 -i "image"
 
 oc describe pod krm-flexera-instance-monitor-0 -n flexera | grep -A20 -i "events"
+
+  beaconURL: "http://REAL-BEACON-URL"
+
+helm upgrade flexera oci://artifactory.bcbsfl.com/public-ecr-aws-charts-virtual/flexera/krm-chart -f /tmp/flexera-values.yaml -n flexera
