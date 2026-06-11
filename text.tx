@@ -1,9 +1,1 @@
-cat > /tmp/flexera-values.yaml <<EOF
-volumeClaimTemplate:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: isilon
-  resources:
-    requests:
-      storage: 2Gi
-EOF
+grep -R "volumeClaimTemplate\|monitor.storage\|storage:" -n /tmp/krm-chart/templates /tmp/krm-chart/values.yaml
