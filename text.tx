@@ -110,3 +110,17 @@ Backout Plan
 5. Engage Red Hat Support if rollback assistance is required.
 
 ⸻
+
+
+Hi Team,
+
+We have validated ACS 4.11 in the lower environment and observed that the default CVE deferrals are working as expected. We also verified other functional activities and features introduced in 4.11, and everything appears to be stable.
+
+Based on the validation results, we are planning to proceed with the ACS 4.11 upgrade in production (UWNSM). The tentative schedule is Friday night, June 26, or Saturday night, June 27, depending on the maintenance window.
+
+Following the Central upgrade, we will proceed with upgrading the secured/security clusters in the lower environments during the following week.
+
+Please let me know if you have any concerns or objections to this plan.
+
+Thank you,
+Sai
