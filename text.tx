@@ -1,7 +1,12 @@
-Hi Ryan,
+Hi Brian,
 
-I verified that the DNS records (API, API-INT, Apps wildcard, and Bootstrap) have been created, and they are all in the same subnet as the cluster nodes. API-INT is also pointing to the same target as the API record.
+I hope you’re doing well.
 
-Based on the OpenShift 4.20 bare metal UPI installation documentation, my understanding is that the next steps would be to prepare/install RHCOS on the nodes, generate the installation configuration and ignition files, and then proceed with the bootstrap and control plane installation.
+I saw your PTO notification. The DB team has been following up on the new OpenShift cluster build, and Linley is looking for an update. Since this request has been pending for some time, they are hoping we can make good progress on it next week.
 
-Could you please confirm if this is the correct next direction, or if there are any other prerequisites we should complete before starting the installation?
+While you’re out, would it be okay if I work with Bob to continue the cluster build so we can keep things moving? I wanted to check with you before proceeding.
+
+Thanks, and enjoy your time off!
+
+Best,
+Sai
