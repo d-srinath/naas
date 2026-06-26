@@ -1,12 +1,1 @@
-Hi Brian,
-
-I hope you’re doing well.
-
-I saw your PTO notification. The DB team has been following up on the new OpenShift cluster build, and Linley is looking for an update. Since this request has been pending for some time, they are hoping we can make good progress on it next week.
-
-While you’re out, would it be okay if I work with Bob to continue the cluster build so we can keep things moving? I wanted to check with you before proceeding.
-
-Thanks, and enjoy your time off!
-
-Best,
-Sai
+oc get pod sensor-6767887c75-snhbp -n stackrox -o jsonpath='{.status.containerStatuses[0].lastState.terminated.reason}{" "}{.status.containerStatuses[0].lastState.terminated.exitCode}{"\n"}'
