@@ -1,1 +1,3 @@
-oc get pod sensor-6767887c75-snhbp -n stackrox -o jsonpath='{.status.containerStatuses[0].lastState.terminated.reason}{" "}{.status.containerStatuses[0].lastState.terminated.exitCode}{"\n"}'
+oc login --token=<your-token> \
+  --server=https://api.ose4-dev.bcbsfl.com:6443 \
+  --kubeconfig=%USERPROFILE%\.kube\newconfig
