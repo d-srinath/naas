@@ -1,3 +1,5 @@
-oc login --token=<your-token> \
-  --server=https://api.ose4-dev.bcbsfl.com:6443 \
-  --kubeconfig=%USERPROFILE%\.kube\newconfig
+      persistence:
+
+        persistentVolumeClaim:
+
+          size: 100Gi
