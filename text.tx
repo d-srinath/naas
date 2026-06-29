@@ -1,1 +1,3 @@
-oc logs scanner-v4-db-69cfddc47f-gzjdk -n stackrox -c db --since=10m | egrep -i "fatal|panic|disk quota|no space|out of memory"
+oc logs scanner-v4-db-777b9d9457-z7lkw \
+-n stackrox -c db --since=30m |
+egrep -i "fatal|panic|disk quota|no space|oom|shutting down"
